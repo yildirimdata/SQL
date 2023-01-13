@@ -1,12 +1,12 @@
 -- SQL SESSION 2 : AGGREGATE FUNCTIONS and GROUPBY - 12.01.2023
 
 --- COUNT: it counts the number of records
--- * can be used with only one aff function: COUNT
--- * if we use count with *, it also included NULLS, f we don't want the nulls to be counted, then
+-- * can be used with only one agg function: COUNT
+-- * if we use count with *, it also included NULLS, if we don't want the nulls to be counted, then
 -- we should use Count with a specific column name.
 
 /* Order of operations:
-    - SELECT TOP N
+    
     1. FROM
     2. JOIN .... ON
     3. WHERE
@@ -21,14 +21,14 @@
 
 
 -- howa many products are there in total?
-SELECT COUNT(product_id) 
+SELECT COUNT(product_id) as total_products 
 FROM product.product;
 
-SELECT COUNT(*) 
+SELECT COUNT(*) as total_products 
 FROM product.product;
 
 -- null values
-SELECT COUNT(phone)
+SELECT COUNT(phone) as phone_number
 -- this doesn't count the nulls
 FROM sale.customer;
 
@@ -37,7 +37,7 @@ SELECT COUNT(*)
 FROM sale.customer;
 
 -- if we want to count the number of null values in phone field.
-SELECT COUNT(*)
+SELECT COUNT(*) as phone_nulls
 FROM sale.customer
 WHERE phone IS NULL;
 
@@ -135,7 +135,7 @@ SELECT model_year, COUNT(product_id)
 FROM product.product
 GROUP BY model_year;
 
--- Write a query taht returns the number of products priced over $1000 by brands
+-- Write a query that returns the number of products priced over $1000 by brands
 SELECT brand_id, COUNT(product_id) luxury_products
 FROM product.product
 WHERE list_price > 1000
@@ -178,7 +178,7 @@ FROM sale.order_item
 GROUP BY order_id;
 
 -- sadece birini almak istesek ornegin
-SELECT order_id, list_price*2, 
+SELECT order_id, list_price*2 as priceXquantity, 
     SUM(quantity * list_price * (1 - discount)) as total_paid,
     discount,
     SUM(quantity * list_price * discount) as total_discount
@@ -206,6 +206,6 @@ ORDER BY most_repeated_names DESC;
 -- Find the state where "yandex" is used the most? (with number of users)
 SELECT TOP 1 state, COUNT(*) as most_yandex_user
 FROM sale.customer
-WHERE email LIKE '%yandex%'
+WHERE email LIKE '%@yandex%'
 GROUP BY state
 ORDER BY COUNT(*) DESC;
