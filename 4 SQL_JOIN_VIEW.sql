@@ -268,7 +268,9 @@ SELECT o.order_id, s.store_name, s.city, o.order_status
     FROM sale.orders o
     CROSS JOIN sale.store s;
 
--- SORUYU HOCADAN AL
+-- The stock table does not have all the products in the product table, and you want to add these products to the stock table.
+-- You have to insert all these products for every three stores with  (zero) quantity.
+--  Write a query to prepare this data.
 
 -- olmayanları görelim
 SELECT * FROM product.stock ORDER BY quantity;
@@ -330,6 +332,8 @@ FROM sale.staff a
 LEFT JOIN sale.staff b 
 -- manageri olmayann employees var. bu nedenle inner join yerine left join kullanmalıyız. innerda manageri null olanlar gelmezdi
 ON a.manager_id = b.staff_id;
+
+--Write a query that returns both the names of staff and the names of their 1st and 2nd managers
 
 /*
 VIEWS
