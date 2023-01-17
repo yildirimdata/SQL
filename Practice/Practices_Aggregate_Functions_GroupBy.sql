@@ -108,4 +108,17 @@ FROM nobel
 GROUP BY winner
 HAVING COUNT(*)>1
 
+-- Q18
+-- Show winners who have won more than one subject.
+SELECT winner
+FROM nobel
+GrOUP BY winner
+HAVING COUNT(DISTINCT subject)>1
 
+-- Q19
+-- Show the year and subject where 3 prizes were given. Show only years 2000 onwards.
+SELECT yr, subject
+FROM nobel
+WHERE yr >= 2000
+GROUP BY yr,subject
+HAVING COUNT(winner)=3;
