@@ -48,6 +48,11 @@ SELECT  street, SUBSTRING(street,3,1) as third_char
 FROM sale.customer
 WHERE ISNUMERIC(SUBSTRING(street,3,1)) = 1;
 
+-- or 
+SELECT street, SUBSTRING(street, 3, 1) third_char
+FROM sale.customer
+WHERE SUBSTRING(street, 3, 1) LIKE '%[0-9]%'
+
 -- Question 5: Add a new column to the customers table that contains the customers' contact information. If the phone is not null, the phone information will be printed, if not, the email information will be printed.
 
 SELECT phone, email, COALESCE(phone, email) as contact
@@ -58,6 +63,12 @@ FROM sale.customer;
 SELECT email, 
         SUBSTRING(email,1,(CHARINDEX('@', email)-1)) as email_name,
         SUBSTRING(email,(CHARINDEX('@', email)+1), (LEN(email) - (CHARINDEX('@', email)))) as email_provider 
+FROM sale.customer;
+
+-- or
+
+SELECT LEFT(email, CHARINDEX('@', email) - 1) AS username,
+       RIGHT(email, LEN(email) - CHARINDEX('@', email)) AS domain
 FROM sale.customer;
 
 -- Q7

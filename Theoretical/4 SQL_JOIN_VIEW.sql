@@ -20,7 +20,7 @@ Inner Join is the most common type of JOINs. It creates a new result table based
 columns from two or more tables. It returns a table that contains only joined rows that meet the join 
 conditions. The intersection of the two tables represents the matching rows.
 
-The INNER JOIN keyword selects all rows from both "employees" and "departments" tables as long as there is 
+For ex: INNER JOIN keyword selects all rows from both "employees" and "departments" tables as long as there is 
 a match between the columns. If there are records in the "employees" table that do not have matches 
 in "departments", these records are not shown in the output.
 
@@ -49,6 +49,7 @@ SELECT p.product_id, p.product_name,
     FROM product.product p 
     INNER JOIN product.category c 
     ON p.category_id = c.category_id;
+
 -- product.product 520 rows. product.category 16 rows. However there are 13 ctagory_names in the merged table
 -- Join result is 520 rows. If we have a right join(below) it would be 523 rows. last three are null. That menas there are not
 -- any products with the category id 2-3 and 12 in the product.product table
@@ -124,7 +125,7 @@ SELECT * FROM sale.order_item;
 SELECT COUNT(DISTINCT product_id) FROM sale.order_item;
 -- 307 products. 520-207: there are 213 products which have been not ordered.
 
--- inner join sadece eslesenleri gosterirç left ile eslesmeyenleri de gorürüz
+-- inner join sadece eslesenleri gosterir, left ile eslesmeyenleri de gorürüz
 SELECT *
 FROM  product.product p 
 LEFT JOIN sale.order_item o 
@@ -163,7 +164,7 @@ LEFT JOIN sale.order_item oi
 ON o.order_id = oi.order_id
 GROUP BY sta.staff_id;
 
--- eger inner join kullansak satis yapmayanları goremezdik
+-- if we had used an inner join, we could not see the employees who have no sale (NULLs)
 SELECT sta.staff_id, ISNULL(SUM(oi.quantity), 0)
 -- ya da coalesce(SUM(oi.quantity), 0)
 FROM sale.staff sta 
@@ -172,13 +173,6 @@ ON sta.staff_id = o.staff_id
 JOIN sale.order_item oi 
 ON o.order_id = oi.order_id
 GROUP BY sta.staff_id;
-
--- to see the order status of orders and the related store name and the city:
-SELECT o.order_id, s.store_name, s.city, o.order_status
-    FROM sale.orders o 
-    LEFT JOIN sale.store s 
-    ON o.store_id = s.store_id;
-
 
 /*
 In simple terms, RIGHT JOIN is the opposite of LEFT JOIN. In this join statement, all the records of the 
@@ -193,7 +187,7 @@ RIGHTJOIN and RIGHT OUTER JOIN keywords are exactly the same. OUTER keyword is o
 -- cok kullanılmaz. daha cok JOIN ve LEFT
 */
 
--- return products that have never been ordered. select product d, product name, order id
+-- return products that have never been ordered. select product id, product name, order id
 SELECT p.product_id, p.product_name, o.order_id
 FROM  sale.order_item o
 RIGHT JOIN product.product p  
@@ -287,7 +281,7 @@ FROM product.product p
 CROSS JOIN sale.store s 
 WHERE p.product_id NOT IN (SELECT product_id FROM product.stock);
 -- 234 row döndü
--- o'ları ekleyelim
+-- 0'ları ekleyelim
 
 SELECT  s.store_id, p.product_id, 0 as quantity 
 FROM product.product p 
@@ -323,7 +317,7 @@ There is no separate expression for SELF JOIN. The INNER JOIN statement is used 
 table with itself.
 */
 
--- wrtie a query that returns the staff names with their manager names
+-- write a query that returns the staff names with their manager names
 
 SELECT * FROM sale.staff;  -- staff_id, manager_id. amac manager_id yerine isim getirmek
 
@@ -402,13 +396,13 @@ LEFT JOIN sale.order_item oi
 ON o.order_id = oi.order_id;
 
 -- result: Started executing query at Line 391. Commands completed successfully.
-Total execution time: 00:00:00.054
+
 -- tables klasoru altinda views klasoru var, bu view orda gorunuyor su an
 
 -- bunu tekrar cagirmak icin
 SELECT * FROM VW_customer_product;
 
--- buna da filtre uygulayabliriz. örneğin salaryyi selectten silip view ousturma gibi. dikkatÇ bu bir table degil, bir query.
+-- buna da filtre uygulayabliriz. örneğin salaryyi selectten silip view ousturma gibi. dikkat: bu bir table degil, bir query.
 -- cagirdigimizda gelen bir query, table degil.
 
 EXEC sp_helptext VW_customer_product

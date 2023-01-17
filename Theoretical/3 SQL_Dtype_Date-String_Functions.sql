@@ -7,9 +7,9 @@
 2. varchar 0 8k chars arası. Char(5) e ALİ yazarsak + 2 karakterlik bosluk daha ayirir. 
 varchar(5) ise ALİ icin 3 byte ayırır. TC kimlik gibi, A-B-C gibi fixed uzunlukta kategoriler icn
 CHAr, sabit olmayanlar icin varchar kullanabilriz.
-Eğer sınırlama yapmazsanız VARCHAR ın 65000 karakter sınırı var. 
-CHAR kullanırsanız 255 karaktere kadar müsaade eder. 
-VARCHAR'ı daha büyük doküman yazacaksanız tercih edebilirsiniz.
+Eğer sınırlama yapmazsak VARCHAR ın 65000 karakter sınırı var. 
+CHAR kullanırsak 255 karaktere kadar müsaade eder. 
+VARCHAR'ı daha büyük doküman yazacaksak tercih ederiz.
 3. eger unicode karakter varsa (ülke dillerine mahsus) her 1 char icin 2 byte. 
 onlar icin nchar ve nvarchar.
 4. text ve ntext: bunlar artik kullanılmıyor.
@@ -143,6 +143,7 @@ SELECT YEAR('2021-11-19') AS year;
 -- DATEDIFF: iki tarih arasındaki farkı bulur. datediff(datepart, startdate, enddate). returns int.
 -- datepart dedigi farki nasil getirmemizi istedigi.month, year, hour, day vs diyebiliriz. The datepart can be year, month, week, day, hour, minute, second, or milisecond. You then specify the start date in the startdate parameter and the end date in the enddate parameter for which you want to find the difference.
 
+SELECT DATEDIFF(HOUR, '1981-08-15', '2023-01-17')as hours;
 SELECT DATEDIFF(WEEK, '1981-08-15', GETDATE()) as my_life_weeks;
 
 SELECT A_date,       
@@ -157,7 +158,7 @@ FROM  t_date_time;
 
 SELECT * FROM sale.orders;
 
-
+-- write a query to show that how many days it took for the orders with order id 1 to be shipped
 SELECT       order_date, shipped_date,
 DATEDIFF (DAY, order_date, shipped_date) day_diff,
 DATEDIFF (DAY, shipped_date, order_date) day_diff  -- erken tarihi yazmak gerektigini gormek icin ekledim bunu
@@ -193,15 +194,15 @@ WHERE order_id=1;
 -- If you need, you can change the date format as below:
 -- SET DATEFORMAT DMY
 
-SELECT ISDATE('123');  -- 0 döner
-SELECT ISDATE('20230114');   -- 1 döner
+SELECT ISDATE('123');  -- 0 
+SELECT ISDATE('20230114');   -- 1
 
 -- ek bilgi: dolaylı cevirme: sql dtypeları kendi cevirmeye calisir once farkli tiplerde islem yapinca
 SELECT 1 + '1'  -- output 2
 
-SELECT ISDATE('2021-12-02') --2021/12/02 ||| 2021.12.02 ||| 20211202
+SELECT ISDATE('2021-12-02'); --2021/12/02 ||| 2021.12.02 ||| 20211202
  
-SELECT ISDATE('02/12/2022') --02-12-2022 ||| 02.12.2022
+SELECT ISDATE('02/12/2022'); --02-12-2022 ||| 02.12.2022
 
 SELECT ISDATE('02122022');  -- 0 verir.
 
@@ -241,17 +242,20 @@ SELECT LEN('  welcome     ');  -- 9
 
 SELECT LEN(123456778); -- 9.. once str convert sonra len verir
 
--- If string is NULL value, the length function returns NULL. If the value specified inside the function is numeric, the LEN() function returns the length of a string representation of the value. That means the numeric value is converted into a string and then the number of characters of it is calculated. Such as:
+-- If string is NULL value, the length function returns NULL. If the value specified inside the function is numeric, 
+-- the LEN() function returns the length of a string representation of the value. 
+-- That means the numeric value is converted into a string and then the number of characters of it is calculated. Such as:
 SELECT LEN(NULL) AS col1, LEN(10) AS col2, LEN(10.5) AS col3; 
 
 
--- if there is a quote in the string: what is escape char
+-- if there is a quote in the string: escape char
 
 -- SELECT 'Jack's Phone' -- calismaz
 SELECT 'Jack''s Phone'  -- calisir
 
 ----- CHARINDEX(substring, string [, start location])
--- CHARINDEX() function finds the first occurrence of substring and returns a value of integer type. If the substring is not found, CHARINDEX() function returns 0.
+-- CHARINDEX() function finds the first occurrence of substring and returns a value of integer type. 
+-- If the substring is not found, CHARINDEX() function returns 0.
  
 SELECT CHARINDEX('C', 'CHARACTER')  -- 1
  
@@ -281,9 +285,10 @@ SELECT PATINDEX('_H%' , 'CHARACTER')  -- 1... bir harf olsun sonrasında h gelsi
 -- LEFT(str, number_of_characters) soldan o kadar numara chars alir. 2 yazarsak ikinci degil 2 tane chars demek
 -- RIGHT (str, number_of_characters) sagdan o kadar numara chars alir
 -- SUBSTRING(str, start, length) ornegin ('dddfd', 2,2) 2. harften basla 2 tane al demek. genelde
--- charindex ile index no bulunur ve sonra substring ile alinir... SUBSTRING(string, start_postion, [length])... If any argument is NULL, the SUBSTRING() function will return NULL.
+-- charindex ile index no bulunur ve sonra substring ile alinir... SUBSTRING(string, start_postion, [length])... 
+-- If any argument is NULL, the SUBSTRING() function will return NULL.
 
--- left ve right
+-- left and right
 
 SELECT LEFT('CHARACTER', 5);  -- CHARA  
 SELECT LEFT('  CHARACTER', 5);  --   CHA
@@ -313,11 +318,12 @@ SELECT UPPER('character');
 SELECT UPPER(LEFT('character',1)) + LOWER(RIGHT('character', LEN('character')-1));
 
 
---- STRING_SPLIT(string, seperator) (it's not like the split() in python pandas with expand parameter. This splits a str into rows, not to the columns. So we can't use it for a case, such as splitting email addresses into two parts from @ symbol and displayin them in two columns.)
+--- STRING_SPLIT(string, seperator) (it's not like the split() in python pandas with expand parameter. 
+-- This splits a str into rows, not to the columns. So we can't use it for a case, 
+-- such as splitting email addresses into two parts from @ symbol and displaying them in two columns.)
 
 SELECT value from string_split('John,is,a,very,tall,boy.', ',');
-
--- (,, da bir row olarak gelir, to avoid, trim)
+-- (,, is also a row, to avoid: trim)
 
 SELECT 
     value  
@@ -345,7 +351,8 @@ SELECT TRIM('ca' FROM 'cadillac') AS new_string;
 SELECT LTRIM('     CHARACTER     ');  -- sag bosluk kalir
 SELECT RTRIM('     CHARACTER     ');  -- sol bosluk kalır
 
--- REPLACE(input_str, substring, new_substr) : replaces all occurences of a substring within a string with another string... REPLACE(string expression, string pattern, string replacement)
+-- REPLACE(input_str, substring, new_substr) : replaces all occurences of a substring within a string with another string... 
+-- REPLACE(string expression, string pattern, string replacement)
 
 SELECT REPLACE('CHARACTER STRING', ' ', '/');
 SELECT REPLACE (TRIM(' Reinvent $Yourself! '), '$', '');
@@ -354,7 +361,8 @@ SELECT REPLACE (TRIM(' Reinvent $Yourself! '), '$', '');
 SELECT REPLACE(123456, 2, 0);  -- 2'yi 0 ile degistirir. bilgi guvenligi icin ilk 5 rakam degistirlir mesela
 
 --- STR(float expression [, length [, decimal]])
---Returns character data converted from numeric data. The character data is right-justified, with a specified length and decimal precision.
+--Returns character data converted from numeric data. The character data is right-justified, 
+-- with a specified length and decimal precision.
 
 SELECT STR(list_price) as str_prices FROM product.product;
 SELECT STR(123.45, 6, 1);
@@ -364,19 +372,8 @@ SELECT STR(FLOOR (123.45), 8, 3) AS num_to_str;
 -- CAST(), CONVERT()
 
 -- CAST ( expression AS data_type [ ( length ) ] ). It casts a value of one type to another. FE:  CAST(Phone AS int)
--- CONVERT ( data_type [ ( length ) ] , expression [ , style ] ). It converts a value of one type to another. FE: CONVERT(INT; Phone, [style: 1 ornegin])
-
--- ROUND(number, decimals, [operation]) : rounds a number to a specified number of decimal places.
--- round() dtype'a gore degisim yapar. 123,84573 round ederken 123,85000 yapar, silmez sondakileri
-
--- ISNULL(check expression, replacement value)Ç replaces null with the specified replacement value
--- COALESCE(Expression1, [E',---,En]): returns the first non-null argument
-
--- AdSoyad(varchar), Telefon(int), e-mail(varchar),adres(varchar) kolonlarına sahip olsun.  Kişiyle iletişime geçebilecek alanı çekmek istiyorsunuz fakat tablonuzda çok fazla eksikliklerin olduğunun farkındasınız. Bu örnekte coalesce fonksiyonunu kullanmanız gerekmektedir, yoksa içiçe isnull ya da nvl gibi fonksiyonlar kullanmanız gerekecekti;
--- COALESCE( Telefon , e-mail , adres , '-' )
-
--- NULLIF(Expression1, Expression2): returns NULL if 2 arguments are equal. otherwise it returns the 1st exp.
--- ISNUMERIC(Expression): determines whether an expression is a valid numeric type. numericse veya numerice dondurulebilecek bir cahr ise 1 yoksa 0 verir.
+-- CONVERT ( data_type [ ( length ) ] , expression [ , style ] ). It converts a value of one type to another. 
+-- FE: CONVERT(INT; Phone, [style: 1 ornegin])
 
 SELECT CAST(12345 AS CHAR);  -- ornegin rakamları str isimlerin yanına eklemek icin onnce castle str yapar snra ekleriz
 
@@ -427,6 +424,9 @@ SELECT CONVERT(NVARCHAR, GETDATE(), 113) --13 / 113
 SELECT CAST('20201010' AS DATE)
 SELECT CONVERT(NVARCHAR, CAST('20201010' AS DATE), 103)
 
+-- ROUND(number, decimals, [operation]) : rounds a number to a specified number of decimal places.
+-- round() dtype'a gore degisim yapar. 123,84573 round ederken 123,85000 yapar, silmez sondakileri
+
 -- ROUND(numeric_expression , length [ ,function ])
 
 SELECT ROUND(123.4567, 2)  -- son 2 ondaligi sifir yapar oncesini yuvarlar
@@ -438,8 +438,8 @@ Round 3 argüman alıyor:
 ilki yuvarlayacağınız sayı
 ikincisi ondalık kısımda kaç basamağa yuvarlamak istediğiniz
 üçüncüsü opsiyonel, default' u 0.
-default haliyle yuvarlama yaptığınızda yuvarlamayı yaptığınız son rakamın 5' ten büyük veya küçük olması durumuna göre aşağı veya yukarı yapar.
-örn. round(888,786, 2) sonuç: 888,790
+default haliyle yuvarlama yaptığınızda yuvarlamayı yaptığınız son rakamın 5' ten büyük veya küçük olması durumuna göre aşağı veya 
+yukarı yapar. örn. round(888,786, 2) sonuç: 888,790
 iki ondalık rakam alacağız ve 3. rakam 5' ten büyük. Bu durumda ikinci rakamı bir üst rakama yuvarlar.
 opsiyonel argümanı 1 yaparsanız yuvarlama yapmadan istediğiniz rakam sayısı neyse o kadar ondalık rakamı döndürür.
 Örn: round(888,786, 2, 1) sonuç: 888,780
@@ -466,9 +466,22 @@ WHERE gdp >= 1000000000000;
 
 
 SELECT CONVERT(INT, 123.99999)  -- sonunda sifirlarla yuvarlama olsun istemiyorsak
-SELECT CONVERT(DECIMAL(18,2), 123.4567)  --- 18 kismi tum rakamları ve decimaldeki rakamları sayar. 18 demek, virgul oncesi 18e kadar olabilir (garantiye almak icin), 2 ise virgul sonrasi 2 olsun
+SELECT CONVERT(DECIMAL(18,2), 123.4567)  --- 18 kismi tum rakamları ve decimaldeki rakamları sayar. 18 demek, 
+-- virgul oncesi 18e kadar olabilir (garantiye almak icin), 2 ise virgul sonrasi 2 olsun
 
---  ISNUMERIC(expression): Returns 1 when the input expression evaluates to a valid numeric data type; otherwise it returns 0. Valid numeric data types are: bigint, int, smallint, tinyint, bit, decimal, numeric, float, real, money, smallmoney.
+-- ISNULL(check expression, replacement value) replaces null with the specified replacement value
+-- COALESCE(Expression1, [E',---,En]): returns the first non-null argument
+
+-- AdSoyad(varchar), Telefon(int), e-mail(varchar),adres(varchar) kolonlarına sahip olsun.  Kişiyle iletişime geçebilecek 
+-- alanı çekmek istiyorsunuz fakat tablonuzda çok fazla eksikliklerin olduğunun farkındasınız. Bu örnekte coalesce fonksiyonunu 
+-- kullanmanız gerekmektedir: COALESCE( Telefon , e-mail , adres , '-' )
+
+-- NULLIF(Expression1, Expression2): returns NULL if 2 arguments are equal. otherwise it returns the 1st exp.
+-- ISNUMERIC(Expression): determines whether an expression is a valid numeric type. numericse veya numerice dondurulebilecek bir 
+-- char ise 1 yoksa 0 verir.
+
+--  ISNUMERIC(expression): Returns 1 when the input expression evaluates to a valid numeric data type; otherwise it returns 0. 
+-- Valid numeric data types are: bigint, int, smallint, tinyint, bit, decimal, numeric, float, real, money, smallmoney.
 
 SELECT ISNUMERIC(1111111) -- 1
 SELECT ISNUMERIC('1111111') -- 1
@@ -524,7 +537,8 @@ SELECT  street, SUBSTRING(street,3,1) as third_char
 FROM sale.customer
 WHERE ISNUMERIC(SUBSTRING(street,3,1)) = 1;
 
--- Question 3: Add a new column to the customers table that contains the customers' contact information. If the phone is not null, the phone information will be printed, if not, the email information will be printed.
+-- Question 3: Add a new column to the customers table that contains the customers' contact information. 
+-- If the phone is not null, the phone information will be printed, if not, the email information will be printed.
 
 SELECT phone, email, COALESCE(phone, email) as contact
 FROM sale.customer;
