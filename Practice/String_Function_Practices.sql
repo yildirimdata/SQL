@@ -108,6 +108,12 @@ WHERE name LIKE '%a%' AND
  name LIKE '%u%' AND
 name NOT LIKE '% %';
 
+-- a simpler and better solution is to use regex
+SELECT name
+FROM world
+WHERE name LIKE '%[aeiou]'
+
+
 -- Q9
 -- The expression subject IN ('chemistry','physics') can be used as a value - it will be 0 or 1. Show the 1984 
 -- winners and subject ordered by subject and winner name; but list chemistry and physics last.
