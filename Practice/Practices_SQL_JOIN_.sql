@@ -180,3 +180,74 @@ SELECT m.name
     ON t.team = m.id
     WHERE t.country = 'FRA'
 
+-- QUESTION 20 (source: https://sqlzoo.net/wiki/More_JOIN_operations)
+-- Obtain the cast list for 'Casablanca'. The cast list is the names of the actors who were in the movie.
+
+SELECT a.name 
+    FROM casting c
+    JOIN movie m 
+        ON c.movieid=m.id
+    JOIN actor a 
+        ON c.actorid = a.id
+    WHERE c.movieid = 
+            (
+            SELECT id FROM movie
+            WHERE title = 'Casablanca'
+            )
+
+
+-- Q21
+-- Obtain the cast list for the film 'Alien'
+
+SELECT a.name
+    FROM casting c
+    JOIN actor a
+        ON c.actorid=a.id
+    WHERE movieid = 
+        (
+        SELECT id 
+        FROM movie
+        WHERE title= 'Alien'
+        )
+
+-- Q22
+-- List the films in which 'Harrison Ford' has appeared
+
+SELECT m.title
+    FROM movie m
+    JOIN casting c
+        ON m.id = c.movieid
+    WHERE c.actorid =
+        (
+        SELECT id 
+        FROM actor
+        WHERE name = 'Harrison Ford'
+        )
+
+-- Q23
+-- List the films where 'Harrison Ford' has appeared - but not in the starring role. [Note: the ord field of casting gives 
+-- the position of the actor. If ord=1 then this actor is in the starring role]
+
+SELECT m.title
+    FROM movie m
+    JOIN casting c
+        ON m.id = c.movieid
+    WHERE c.ord !=1 
+        AND c.actorid = 
+            (
+            SELECT id 
+            FROM actor
+            WHERE name = 'Harrison Ford'
+            )
+
+-- Q24
+-- List the films together with the leading star for all 1962 films.
+
+SELECT m.title, a.name
+    FROM movie m
+    JOIN casting c
+        ON m.id = c.movieid
+    JOIN actor a
+    ON c.actorid = a.id 
+    WHERE c.ord = 1 
+        AND m.yr = 1962;

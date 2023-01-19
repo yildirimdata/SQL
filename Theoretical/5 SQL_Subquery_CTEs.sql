@@ -17,11 +17,12 @@ There are some rules when using subquery:
 SELECT dept_name, 
        (SELECT MAX(salary) FROM dbo.department) as max_salary
 FROM dbo.department;
+
 -- bir agg function olmasına ragmen group by kullanmadan calistirabildik. 
 -- en önemli kuralı tek bir deger döndürmesi gerekir. single subquery
 
-
 -- Subquery in FROM clause:
+
 SELECT *
 FROM 
     (SELECT name, seniority, salary 
@@ -29,6 +30,17 @@ FROM
     WHERE seniority = 'Senior' AND salary > 80000) as sub_table;
 
     -- eger subquery from ile kullanılıyorsa her zaman as ile alias almalı (as sub_table bu ornekte)
+
+
+-- write a query to see the stock numbers of the products more expensive than 1000
+
+SELECT expensivee.product_id, COALESCE(s.quantity, 0)
+FROM (SELECT product_id, list_price 
+        FROM product.product
+        WHERE list_price > 1000) as expensivee
+    LEFT JOIN product.stock s 
+    ON expensivee.product_id =  s.product_id
+ORDER BY quantity;
 
 -- Subquery in the WHERE clause example:
 -- A subquery (inner query-nested query - main q is outer q) is usually embedded inside the WHERE clause. It's generally used with comparison 
@@ -114,6 +126,7 @@ SELECT *
 
 
 -- Find the employees who work in the departments that have average salaries higher than 60000.
+
 SELECT name, dept_name, salary 
     FROM dbo.department
     WHERE dept_name IN ( 
@@ -157,7 +170,7 @@ SELECT TOP 10 c.city, o.order_date
     WHERE c.city = 'Buffalo'
     ORDER BY o.order_date DESC;
     -- buraya kadar buffaloda order edilen son 10 ürünün tarihlerini bulduk. bir sonrak adım da product.producta baglanacagizz,
-    -- ama onun icin ilk order.itema baglanacagiz. ama o tarihlerde baska sehirde de order vardir, en iyisini unique
+    -- ama onun icin ilk order.itema baglanacagiz. ama o tarihlerde baska sehirde de order vardir, dolayısıyla en iyisi unique
     -- degerleri sabitlemek icin order idlerini almak bunların
 
 SELECT TOP 10 o.order_id
@@ -212,7 +225,7 @@ SELECT product_id, product_name, category_id, list_price, (SELECT avg(list_price
 -- bunların bir de avg priceını gorup karsilasitrmak istesek ancak ya group by a subquery
 FROM product.product
 
--- ama bu tum Plar ortalaması, category bazında P ortalaması nasıl alacagız. pthondaki for loop isini burada corr subquery yapacak
+-- ama bu tum Plar ortalaması, category bazında P ortalaması nasıl alacagız. pythondaki for loop isini burada corr subquery yapacak
 
 SELECT product_id, product_name, p.category_id, 
         list_price, (SELECT avg(list_price) from product.product WHERE category_id = p.category_id)
@@ -433,7 +446,7 @@ SELECT a.first_name, a.last_name, b.order_date
 WHERE a.customer_id = b.customer_id
     AND b.order_date = cte.order_date    
 
--- list the stores whose turnovers are udner the average store turnovers in 2018
+-- list the stores whose turnovers are under the average store turnovers in 2018
 
 WITH trn_1 AS
 (
@@ -450,9 +463,6 @@ trn_2 AS -- avg alabilmek icin 2. bir cte daha almamız gerekyor
 SELECT *
 FROM trn_1, trn_2
 WHERE trn_1.turnover < trn_2.avg_trn
-
-    )
-
 
 -- example:find the employees' salary which is higher than the average. 
 -- (we previously used a subquery to solve this problem. This time we'll solve this problem using a CTE.)
@@ -473,7 +483,7 @@ FROM dbo.department
 WHERE salary > (SELECT AVG(salary) FROM dbo.department)  
 
 
--- ustteki select sorgusu bir cevap dı-ondurur, orn avg.salary, sonra hemen altinda asil query'ye geceriz ve condition olarak bu 
+-- ustteki select sorgusu bir cevap dondurur, orn avg.salary, sonra hemen altinda asil query'ye geceriz ve condition olarak bu 
 -- donen ilk cevabı karsilastirma icin kullanrızı
 
 -- RECURSIVE COMMON EXPRESSION TABLEs
