@@ -319,7 +319,7 @@ WHERE NOT EXISTS
 
 --- Write a query that rerurns a list of states where 'Apple - Pre-Owned iPad3 - 32GB - White' product has not been ordered
 
--- ilk önce ürünü bulalaım. siparisleri order itemden eslestirelim. sonra sehir bilgileri customerda, oraya da sale.orders
+-- ilk önce ürünü bulalım. siparisleri order itemden eslestirelim. sonra sehir bilgileri customerda, oraya da sale.orders
 -- üzerinden gidecegiz. 
 
 SELECT *

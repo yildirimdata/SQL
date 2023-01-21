@@ -12,6 +12,7 @@ insert into department values (4, 'Finance', 'Mumbai');
 insert into department values (5, 'Marketing', 'Bangalore');
 insert into department values (6, 'Sales', 'Mumbai');
 
+
 CREATE TABLE EMPLOYEE
 (
     EMP_ID      INT PRIMARY KEY,

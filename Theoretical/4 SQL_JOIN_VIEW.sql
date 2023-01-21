@@ -229,6 +229,7 @@ FROM product.product p
 FULL JOIN product.stock s 
 ON p.product_id = s.product_id
 GROUP BY p.product_id;
+
 -- 520 satır döndü
 -- sadcee nulları gorelim
 SELECT p.product_id, SUM(s.quantity) as total_quantity
@@ -376,6 +377,7 @@ FROM store_Texas_view;
 
 -- müşterilerin siparis ettigi ürünleri gosteren bir view oluşturalım
 
+-- STEP 1: müsterilerin siparis ettigi ürünler:
 SELECT c.customer_id, c.first_name+ ' ' + c.last_name as customer_name, 
         o.order_id, oi.product_id, oi.quantity
 FROM sale.customer c 
@@ -384,7 +386,7 @@ ON c.customer_id = o.customer_id
 LEFT JOIN sale.order_item oi 
 ON o.order_id = oi.order_id;
 
--- bunu daha sonra da kullanacaksak, her seferinde yeniden yazmamak icin view olustururuz
+-- Step 2: view olusturma
 
 CREATE OR ALTER VIEW VW_customer_product as
 SELECT c.customer_id, c.first_name+ ' ' + c.last_name as customer_name, 
