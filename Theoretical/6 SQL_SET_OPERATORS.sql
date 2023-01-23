@@ -13,7 +13,7 @@ duplicates from the results i.e. only one row will be listed for each duplicated
 4. EXCEPT set operator removes the second query's results from the output if they are also found in the first query's results. 
 INTERSECT and EXCEPT set operations produce unduplicated results.
 
-- Join'nden farkı altalta eklemeleri satrlari. join ise columnları yanyana ekliyor
+- Join'nden farkı satirlari altalta eklemeleri . join ise columnları yanyana ekliyor
 
 Important:
 
@@ -72,7 +72,7 @@ SELECT * FROM dbo.employees_B;
 -- I'll create same table with different column names to check some further details (I'll change the name of emp_id and 
 -- order of gender column and the name of job_title)
 
-CREATE TABLE employees_C
+-- CREATE TABLE employees_C
 (
 id BIGINT,
 first_name VARCHAR(20),
@@ -83,7 +83,7 @@ title_job VARCHAR (30),
 
 );
 -- insert the values
-INSERT employees_C VALUES
+-- INSERT employees_C VALUES
  (49714,  'Hugo'    , 'Forester'       ,   55000 ,  'Male', 'IT Support Specialist')
 ,(67323,  'Lisa'    , 'Wiener'        ,   75000 ,  'Female', 'Business Analyst')
 ,(70950,  'Rodney'   , 'Weaver'        ,   87000 ,  'Male', 'Project Manager')
@@ -91,7 +91,7 @@ INSERT employees_C VALUES
 ,(76589,  'Jason'    , 'Christian'     ,   99000 ,  'Male', 'Project Manager')
 ,(97927,  'Billie'    , 'Lanning'      ,   67000 ,  'Female', 'Web Developer')
 
-SELECT * FROM employees_C;
+-- SELECT * FROM employees_C;
 /*
 UNION OPERATOR
 In some cases, we may need to combine data from two or more tables into a result set. Union clause is used to perform this 
@@ -135,10 +135,7 @@ SELECT id, first_name, last_name, gender, title_job
     FROM employees_C; -- simdi 10 getirdi. dolayısıyla column order matters ama column name onemli degil.. Bir de aynı sayıda 
                         -- column olması onemli
 
-
--- List the products sold in the cities of Charlotte and Aurora
-
--- bu sorunun cevabından once bir view recap'i
+-- once bir view recap'i
 -- diyelim asagidakini sık kullanacaksak view ile kalıcı hale getirmek mantikli
 create view sales_info_2 as
         select c.customer_id, c.first_name, c.last_name, c.city, o.order_id, oi.list_price,
@@ -201,6 +198,7 @@ SELECT DISTINCT p.product_name
 		AND c.city IN ('Aurora', 'Charlotte') 
 
 -- Write a query that returns all customers whose first or last name is Thomas
+
 SELECT first_name 
     FROM sale.customer
     WHERE first_name = 'Thomas'
@@ -220,6 +218,7 @@ UNION ALL
 SELECT column1, column2, ...
   FROM table_B
 */
+
 
 -- let's combine Employees A and B tables with union all. We'll also use a new field called "Type" to indicate 
 -- which table the employees belong to.
@@ -369,7 +368,6 @@ SELECT product_id, product_name
 -- QUESTION:
 -- List in ascending order the stores where both "Samsung Galaxy Tab S3 Keyboard Cover" and 
 -- "Apple - Pre-Owned iPad 3 - 64GB - Black" are stocked.
-
 
 SELECT store.store_name  
     FROM product.stock stock

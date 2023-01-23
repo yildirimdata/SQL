@@ -8,7 +8,8 @@ is SQL's way of handling if/then logic. Every CASE expression must end with the 
 ELSE part is optional. In case there is no ELSE part and no conditions are true, it returns NULL. 
 
 There are two kinds of CASE expression: 
-1.Simple CASE expression: The simple CASE expression compares an expression to a set of simple expressions to determine the result.
+1.Simple CASE expression: The simple CASE expression compares an expression to a set of simple expressions to determine 
+the result.
 2. Searched CASE expression: The searched CASE expression evaluates a set of Boolean expressions to determine the result.
 
 CASE can be used in any statement or clause. For example, we can use CASE in statements such as SELECT, UPDATE, 
@@ -166,6 +167,7 @@ FROM sale.customer
 --- QUESTION: Write a query that gives the first and last names of customers who have ordered products from 
 -- the computer accessories, speakers, and mp4 player categories in the same order.
 
+
 -- ilk once ilgili joinleri yapalım ve ihtiyacımız olan sutunları secelim
 SELECT c.customer_id, c.first_name, c.last_name, o.order_id,p.product_name, cat.category_name
 FROM sale.customer c 
@@ -212,6 +214,27 @@ SELECT first_name, last_name
 FROM cte
 WHERE speakers >0 AND comp >0 AND mp4>0;
 
+-- another solution 
+WITH cte As
+(SELECT oi.order_id 
+FROM product.category c, product.product p, sale.order_item oi 
+WHERE p.product_id = oi.product_id AND c.category_id = p.category_id 
+AND c.category_name = 'computer accessories'
+INTERSECT
+SELECT oi.order_id
+FROM product.category c, product.product p, sale.order_item oi 
+WHERE p.product_id = oi.product_id AND c.category_id = p.category_id 
+AND c.category_name = 'speakers' 
+INTERSECT
+SELECT oi.order_id
+FROM product.category c, product.product p, sale.order_item oi 
+WHERE p.product_id = oi.product_id AND c.category_id = p.category_id 
+AND c.category_name = 'mp4 player')
+SELECT C.first_name, c.last_name
+FROM cte, sale.orders o, sale.customer c  
+WHERE cte.order_id = o.order_id AND o.customer_id = c.customer_id
+
+
 -- QUESTION
 -- Write a query that returns the number of distributions of the orders in the previous
 -- query result, according to the days of the week
@@ -223,7 +246,8 @@ FROM (
     WHERE DATEDIFF(DAY,order_date, shipped_date) > 2
 ) AS source_table
 PIVOT 
-(COUNT(order_id) FOR order_day IN ([Monday], [Tuesday], [Wednesday], [Thursday], [Friday], [Saturday], [Sunday])) AS pivot_table
+(COUNT(order_id) FOR order_day IN ([Monday], [Tuesday], [Wednesday], [Thursday], [Friday], 
+                                    [Saturday], [Sunday])) AS pivot_table
 
 
 
