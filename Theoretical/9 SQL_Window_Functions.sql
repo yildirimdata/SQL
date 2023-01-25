@@ -231,22 +231,103 @@ SELECT DISTINCT category_id, brand_id,
 		COUNT(product_id) OVER (PARTITION BY category_id, brand_id) as total_products
 FROM product.product
 
+--- -- Write a query using the window function that returns the cumulative total turnovers of the 
+-- Burkes Outlet by order date between "2019-04-01" and "2019-04-30".
+-- Columns that should be listed are: 'order_date' in ascending order and 'Cumulative_Total_Price'.
+
+WITH cte AS (
+SELECT o.order_date, SUM(oi.list_price*oi.quantity* (1-oi.discount)) as total_turnover
+FROM sale.order_item oi, sale.orders o, sale.store s
+WHERE s.store_id = o.store_id AND o.order_id=oi.order_id
+			AND s.store_name = 'Burkes Outlet'
+			AND o.order_date BETWEEN '2019-04-01' AND '2019-04-30'
+GROUP BY o.order_date)
+SELECT cte.order_date, SUM(cte.total_turnover) OVER (order by cte.order_date ) as cumulative_sum
+FROM cte
+
+-- Write a query using the window function that returns staffs' first name, last name, and their total net 
+-- amount of orders in descending order.
+
+SELECT DISTINCT s.first_name, 
+				s.last_name, 
+				SUM(oi.list_price*oi.quantity*(1-oi.discount)) 
+				OVER(PARTITION BY s.first_name, s.last_name) as total_sales
+		FROM sale.staff s, sale.order_item oi, sale.orders o 
+		WHERE s.staff_id = o.staff_id 
+			AND o.order_id = oi.order_id
+		ORDER BY total_sales DESC;
+
+-- solution with group by
+
+SELECT s.first_name, s.last_name, SUM(oi.list_price*oi.quantity*(1-oi.discount)) as total_sales
+		FROM sale.staff s, sale.order_item oi, sale.orders o 
+		WHERE s.staff_id = o.staff_id 
+			AND o.order_id = oi.order_id
+		GROUP BY s.first_name, s.last_name
+		ORDER BY total_sales DESC;
+
+-- List the employee's first order dates by month in 2020. Expected columns are: first name, last name, month 
+-- and the first order date. (last name and month in ascending order)
+
+-- WF solution 
+SELECT DISTINCT s.first_name, s.last_name, 
+		MONTH(o.order_date) as months, 
+		MIN(order_date) OVER(PARTITION BY s.first_name, s.last_name, MONTH(o.order_date)) as first_order_date
+	FROM sale.staff s, sale.orders o 
+	WHERE s.staff_id = o.staff_id AND YEAR(o.order_date) = 2020
+	ORDER BY last_name, months;
+
+-- GroupBy solution
+SELECT s.first_name, s.last_name, 
+		MONTH(o.order_date) as months, 
+		MIN(order_date) as first_order_date
+	FROM sale.staff s, sale.orders o 
+	WHERE s.staff_id = o.staff_id AND YEAR(o.order_date) = 2020
+	GROUP BY s.first_name, s.last_name, MONTH(o.order_date)
+	ORDER BY last_name, months;
+
 
 
 -- *************************************************************************************************
 -- *************************************************************************************************
 
--- WINDOW FRAMES
+
 /*
-UNBOUNDED PRECEDING: the frame starts at the first row of the partition.
-N PRECEDING: the frame starts at Nth rows before the current row.
-CURRENT ROW: means the current row that is being evaluated.
-UNBOUNDED FOLLOWING: the frame ends at the final row in the partition.
-N FOLLOWING: the frame ends at the Nh row after the current row.
-The ROWS or RANGE specifies the type of relationship between the current row and frame rows.
- ROWS: the offsets of the current row and frame rows are row numbers.
- RANGE: the offset of the current row and frame rows are row values.
- */
+WINDOW FRAMES
+
+By default, a window is set for each row to encompass all the rows from the first to the current row in the partition.
+However, this is the default and can be adjusted using the window frame clause. 
+A window function query using the window frame clause would look as follows:
+
+SELECT {columns},
+{window_func} OVER (PARTITION BY {partition_key} ORDER BY {order_key} {rangeorrows} 
+BETWEEN {frame_start} AND {frame_end})
+FROM {table1};
+
+Here,
+- {columns} are the columns to retrieve from tables for the query,  
+- {window_func} is the window function you want to use,  
+- {partition_key} is the column or columns you want to partition on,  
+- {order_key} is the column or columns you want to order by,  
+- {rangeorrows} is either the RANGE keyword or the  ROWS keyword,  
+- {frame_start} is a keyword indicating where to start the window frame,  
+- {frame_end} is a keyword indicating where to end the window frame
+
+
+Commonly Used Framing Syntax
+
+			Frame																		Meaning
+ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW :	Start at row 1 of the partition and include rows up to the current row.
+ROWS UNBOUNDED PRECEDING 						 :	Start at row 1 of the partition and include rows up to the current row.
+ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING :	Start at the current row and include rows up to the end of the partition.
+ROWS BETWEEN N PRECEDING AND CURRENT ROW		 :	Start at a specified number of rows before the current row and 
+													include rows up to the current row.
+ROWS BETWEEN CURRENT ROW AND N FOLLOWING		 :  Start at the current row and include rows up to a specified number 
+													of rows following the current row.
+ROWS BETWEEN N PRECEDING AND N FOLLOWING		 :  Start at a specified number of rows before the current row and 
+													include a specified number of rows following the current row. 
+													The current row is also included!
+*/
 
 -- order by kullanmazsak window frame kullanılamaz. order by ile birlikte optionaldir.
 
@@ -356,6 +437,8 @@ SELECT name, hire_date, seniority,
 	   DENSE_RANK() OVER(PARTITION BY seniority ORDER BY hire_date DESC) AS rank_duration
 FROM dbo.department;
 
+
+
 /*
 ROW_NUMBER(): 
 
@@ -371,7 +454,6 @@ SELECT name, seniority, hire_date,
 FROM dbo.department;
 
 -- Note: We must use ORDER BY with ranking window functions.
-
 
 -- *************************************************************************************************
 -- *************************************************************************************************
@@ -544,7 +626,7 @@ with cte as
 			inner join sale.order_item b
 			on a.order_id=b.order_id
 		group by a.customer_id, b.order_id
-		order by a.customer_id, b.order_id
+		--order by a.customer_id, b.order_id
 )
 select distinct customer_id,
 	first_value(order_id) over(partition by customer_id order by net_price desc),
@@ -556,15 +638,12 @@ from cte
 -- Write a query that returns first order date by month. (Use Last_Value)
 
 select distinct YEAR(order_date) years, MONTH(order_date) months,
-	last_value(order_date) over(partition by YEAR(order_date), MONTH(order_date) order by order_date rows between unbounded preceding and unbounded following) last_date
+	last_value(order_date) over(partition by YEAR(order_date), MONTH(order_date) 
+			order by order_date rows between unbounded preceding and unbounded following) last_date
 from sale.orders
 
-
-
-
-
-
-
+-- *************************************************************************************************
+-- *************************************************************************************************
 
 
 ---- PRACTICE

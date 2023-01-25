@@ -116,7 +116,7 @@ SELECT c.state,
                 MONTH(o.order_date)
         HAVING COUNT(o.order_id) > 5
 
--- Please write a query to return only the order ids that have an average amount of more than $2000. 
+-- write a query to return only the order ids that have an average amount of more than $2000. 
 -- Your result set should include order_id. Sort the order_id in ascending order.
 
 SELECT order_id 
@@ -413,7 +413,7 @@ SELECT *
 
 
 SELECT b.brand_name, p.model_year,
-		COUNT(p.product_id)
+		COUNT(p.product_id) as total_products
 FROM product.product p
 INNER JOIN product.brand b
 	ON p.brand_id=b.brand_id
@@ -492,7 +492,8 @@ FROM product.category
 [gps],
 [Receivers Amplifiers]
 
---QUESTION: Write a query that returns count of the orders day by day in a pivot table format that has been shipped later than two days.
+--QUESTION: Write a query that returns count of the orders day by day in a pivot table format that has been 
+-- shipped later than two days.
 
 SELECT * 
     FROM(
