@@ -62,7 +62,6 @@ SELECT category_id,
                 OR MIN(list_price) < 500
 
 -- find the average product prices of the brands. display brand name and avg prices in desc
-
 SELECT b.brand_name, 
         AVG(list_price) as avg_price
         FROM product.product p 
@@ -126,6 +125,8 @@ SELECT order_id
     HAVING AVG(list_price * quantity * (1-discount)) > 2000
     ORDER BY order_id ASC;
 
+-- *********************************************************************************
+-- *********************************************************************************
 
 
 /*
@@ -229,6 +230,7 @@ GROUP BY
         ()  -- koymazsak ana toplam record eksik kalir sadece
         );
 
+
 -- EXAMPLE
 SELECT * FROM sale.order_item;
 
@@ -238,7 +240,7 @@ SELECT * FROM sale.order_item;
 SELECT 
     SUM(oi.quantity * oi.list_price * (1-discount)) as total_sales
     FROM 
-    sale.order_item;
+    sale.order_item oi;
 
 --STEOP 2. calculate the total sale prices of the brands
 
@@ -262,7 +264,7 @@ SELECT c.category_name,
     GROUP BY c.category_name;
 
 
--- calculate the total ales amount by brands and categories with model years
+-- calculate the total sales amount by brands and categories with model years
 
 SELECT
 	b.brand_name, c.category_name, p.model_year,
@@ -405,8 +407,10 @@ SELECT *
 
 -- write a query that returns total turnover from each brand by model year (in pivot table format)
 
---QUESTION: Write a query using summary table that returns the number of products for each category by model year. (in pivot table format)
---(kategorilere ve model y�l�na g�re toplam �r�n say�s�n� summary tablosu �zerinden hesaplay�n)
+
+--QUESTION: Write a query using summary table that returns the number of products for each category by model 
+-- year. (in pivot table format)
+
 
 SELECT b.brand_name, p.model_year,
 		COUNT(p.product_id)
