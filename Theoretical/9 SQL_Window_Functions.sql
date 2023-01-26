@@ -108,7 +108,7 @@ WITH cte(order_id, total_amount) As
 FROM sale.order_item)
 SELECT order_id, total_amount
 FROM cte 
-WHERE total_amount > 500
+WHERE total_amount > 500;
 
 
 -- Write a query that shows the total stock amount of each product in the stock table.(Use both of Group by and WF)
@@ -200,10 +200,8 @@ from(
 ) t
 
 -- WF ile soyle yapardik : subquery
-SELECT COUNT(product_id) FROM (
-SELECT DISTINCT product_id, -- DISTINCt yazmazsak 4722 satir 77 dondurur
-		COUNT(product_id) OVER(PARTITION BY product_id) as total_products  
-FROM sale.order_item) as t  -- fromun icinde subqueriye isim verilir unutma
+
+  -- fromun icinde subqueriye isim verilir unutma
 
 -- QUESTION
 -- Write a query that returns how many products are in each order?
@@ -223,7 +221,7 @@ SELECT DISTINCT order_id,
 		CAST(AVG(list_price) OVER(PARTITION BY order_id) as decimal (18,2)) as avg_order_price
 FROM sale.order_item
 
--- 2 GRUBA GORE PARTITION -- şstedigimiz sayıda gruplama yapabiliriz
+-- 2 GRUBA GORE PARTITION -- istedigimiz sayıda gruplama yapabiliriz
 -- QUESTION
 -- Write a query that returns the number of products in each category of brands.
 
@@ -361,12 +359,12 @@ SELECT brand_id, model_year,
 --- 1 preceding ile yapalım
 SELECT brand_id, model_year,
 		COUNT(product_id) OVER(PARTITION BY brand_id ORDER BY model_year) total_products_per_brand_per_year,
-		COUNT(product_id) OVER(PARTITION BY brand_id ORDER BY model_year RANGE BETWEEN UNBOUNDED 
-		PRECEDING AND current ROW) total_products_per_brand_per_year, -- default
-		COUNT(product_id) OVER(PARTITION BY brand_id ORDER BY model_year ROWS BETWEEN UNBOUNDED 
-		PRECEDING AND current ROW) total_products_per_brand_per_year,
-			COUNT(product_id) OVER(PARTITION BY brand_id ORDER BY model_year ROWS  BETWEEN 1 PRECEDING
-			AND CURRENT ROW) total_products_per_brand_per_year
+		COUNT(product_id) OVER(PARTITION BY brand_id ORDER BY model_year 
+							RANGE BETWEEN UNBOUNDED PRECEDING AND current ROW) total_products_per_brand_per_year, -- default
+		COUNT(product_id) OVER(PARTITION BY brand_id ORDER BY model_year 
+								ROWS BETWEEN UNBOUNDED PRECEDING AND current ROW) total_products_per_brand_per_year,
+		COUNT(product_id) OVER(PARTITION BY brand_id ORDER BY model_year 
+								ROWS  BETWEEN 1 PRECEDING AND CURRENT ROW) total_products_per_brand_per_year
 		FROM product.product
 
 
@@ -414,10 +412,22 @@ FROM dbo.department;
 -- Note: RANK() function assigns the row numbers of the values in the list created by the ordering rule. For 
 -- the same values assigns their smallest row number.
 
--- rank employees according to their graduation anf in line with their salary from highest to lowest.
+-- rank employees according to their graduation and in line with their salary from highest to lowest.
 SELECT name, salary, graduation,
 	   RANK() OVER(PARTITION BY graduation ORDER BY salary DESC) AS rank_duration
 FROM dbo.department;
+
+-- rank aynı kategorinin tamamına aynı noyu verir. örneğin aynı puanı alan ogrenciler aynı sırada olur, aynı fiyatli 
+-- ürünler aynı sırada yer alır vb vb
+SELECT order_id, RANK() OVER(order by order_id) as rank_no
+FROM sale.order_item
+
+-- dense rankin farki ise kacta birakirsa ordn baslar. 2sini karsilastir
+
+SELECT order_id, 
+		RANK() OVER(order by order_id) as rank_no,
+		DENSE_RANK() OVER(order by order_id) as dense_rank_no
+FROM sale.order_item
 
 --  let's apply the same scenario by using the DENSE_RANK function. 
 
@@ -430,11 +440,13 @@ FROM dbo.department;
 
 -- rank employees according to their graduation and in line with their salary from highest to lowest.
 SELECT name, salary, graduation,
-	   DENSE_RANK() OVER(PARTITION BY graduation ORDER BY salary DESC) AS rank_duration
+	   DENSE_RANK() OVER(PARTITION BY graduation ORDER BY salary DESC) AS dense_rank_duration,
+	   RANK() OVER(PARTITION BY graduation ORDER BY salary DESC) AS rank_duration
 FROM dbo.department;
 
 SELECT name, hire_date, seniority,
-	   DENSE_RANK() OVER(PARTITION BY seniority ORDER BY hire_date DESC) AS rank_duration
+	   DENSE_RANK() OVER(PARTITION BY seniority ORDER BY hire_date DESC) AS rank_duration,
+	   RANK() OVER(PARTITION BY seniority ORDER BY hire_date DESC) AS rank_duration
 FROM dbo.department;
 
 
@@ -450,16 +462,57 @@ The row number starts with 1 for the first row in each partition.*/
 -- Let's give a sequence number to the employees in each seniority category according to their hire dates. 
 
 SELECT name, seniority, hire_date,
-	   ROW_NUMBER() OVER(PARTITION BY seniority ORDER BY hire_date DESC) AS row_number
+	   ROW_NUMBER() OVER(PARTITION BY seniority ORDER BY hire_date DESC) AS row_number,
+	   RANK() OVER(PARTITION BY seniority ORDER BY hire_date DESC) AS rank_number,
+	   DENSE_RANK() OVER(PARTITION BY seniority ORDER BY hire_date DESC) AS dense_rank_number
 FROM dbo.department;
 
+-- ama sunun ciktisi farkli, partition olmadigi icin tum listeyi tek sira yapar
+SELECT name, seniority, hire_date,
+	   ROW_NUMBER() OVER (ORDER BY hire_date DESC) AS row_number
+FROM dbo.department;
+
+-- partition by sifirlamanın nerede yapilacagi, eger yoksa row_no devam eder.
+-- örneğin order by'da list_price yazarsak en düşükten siralar ve ilk 10, 20 vs istedigimizi aliriz
+
 -- Note: We must use ORDER BY with ranking window functions.
+
+-- window functions sadece select veya order by icinde kullanılır. ornegin where vs icinde kullanılmaz
+
+-- QUESTION
+-- Assign an ordinal number to the product prices for each category in ascending order
+
+SELECT category_id, list_price,  
+		ROW_NUMBER() OVER(PARTITION BY category_id ORDER BY list_price DESC) as row_number
+  -- order by kullanmazsak error
+FROM product.product;
+
+-- en bastan en sona kesintisiz numaralandırma
+
+SELECT category_id, list_price,  ROW_NUMBER() OVER(ORDER BY list_price DESC) as row_number
+  -- order by kullanmazsak error
+FROM product.product;
+
+-- QUESTION
+-- Lets try previous query again using RANK() and DENSE_RANK() functions and discuss differences among all of them..
+
+SELECT category_id, list_price,  
+		ROW_NUMBER() OVER(PARTITION BY category_id ORDER BY list_price DESC) as row_number,
+		RANK() OVER(PARTITION BY category_id ORDER BY list_price DESC) as rank_number,
+		-- 4. kategoride 3 ürüne row_number 1-2-3 verdi rank ise 1-1-1 verdi. oraya ve sonrasina gecise dikkkat 
+		DENSE_RANK() OVER(PARTITION BY category_id ORDER BY list_price DESC) as dense_rank_number
+		-- 5. kategoride rank 3 adet 1denn sonra 4ten devam etmisti, dense_rank ise 1-1-1 sonrası kategori 5e 2 ile basladi
+FROM product.product;
+
+-- nerelerde kullanırız. her kategorinin fiyatı en yüksek (most expensive - highest) 3er ürününü bulmak icin, 
+-- ya da her markada en düsük fiyatli (cheapest)3 ürün,
+-- en erken tarihli (earliest - latest) 3 siparis vb vb... neyi siralarsak orada kullanırız
 
 -- *************************************************************************************************
 -- *************************************************************************************************
 /*
 VALUE WINDOW Functions
-(ANalytic navigation functions)
+(Analytic navigation functions)
 
 value window functions allow us to include values from other rows. Value Window Functions access a previous row 
 without having to do a self-join. Some also call these functions as 'offset functions'. The following table illustrates 
@@ -472,7 +525,7 @@ Function	Description:
 - LAST_VALUE	: Get the value of the last row in a specified window frame.
 - LEAD          : Provide access to a row at a given physical offset that follows the current row.
 
- LAG() and LEAD() functions functions are useful to compare rows to preceding or following rows. LAG returns 
+ LAG() and LEAD() functions are useful to compare rows to preceding or following rows. LAG returns 
  data from previous rows and LEAD returns data from the following rows. SYntax:
 
  LAG(column_name [,offset] [,default])
@@ -519,7 +572,7 @@ SELECT a.order_id,
 				WHERE a.staff_id=b.staff_id
 
 -- QUESTION
--- Write a query that returns the order date of the one next sale of each staff (use the LEAD function)
+-- Write a query that returns the order date of the next sale of each staff (use the LEAD function)
 
 SELECT a.order_id,
 				   b.staff_id, 
@@ -538,9 +591,9 @@ from sale.orders a, sale.staff b
 where a.staff_id=b.staff_id
 
 --- IMPORTANT QUESTION
--- Write a query that returns the difference order count between the current month and the previous month for each year.
+-- Write a query that returns the difference of order count between the current month and the previous month for each year.
 
--- bu soruyu yaparkan şlk olarak tabloyu bulur ve yıl ve aya gore ayırırız.
+-- bu soruyu yaparkan ilk olarak tabloyu bulur ve yıl ve aya gore ayırırız.
 SELECT order_id, YEAR(order_date) years, MONTH(order_date) months
 FROM sale.orders
 
@@ -585,7 +638,7 @@ SELECT id, name,
 FROM dbo.department;
 
 -- for each row, LAST_VALUE() function returns the last value from the whole name column sorted by id.
--- We change the window frame. Because the default window frame didn't cover all of the rows for each row.
+-- We can change the window frame. Because the default window frame didn't cover all of the rows for each row.
 
 -- firstvalue ile ilgili bir ornek
 
@@ -601,8 +654,9 @@ FROM sale.staff;
 
 -- QUESTION
 -- Write a query that returns first order date by month.
+
 SELECT order_date, YEAR(order_date) years, MONTH(order_date) months,
-	FIRST_VALUE( order_date) OVER(PARTITION BY YEAR(order_date),MONTH(order_date))  -- bu hata verir, order by yok
+	FIRST_VALUE(order_date) OVER(PARTITION BY YEAR(order_date),MONTH(order_date))  -- bu hata verir, order by yok
 FROM sale.orders 
 
 SELECT DISTINCT YEAR(order_date) years, MONTH(order_date) months,
@@ -629,7 +683,8 @@ with cte as
 		--order by a.customer_id, b.order_id
 )
 select distinct customer_id,
-	first_value(order_id) over(partition by customer_id order by net_price desc),
+	first_value(order_id) over(partition by customer_id order by net_price desc), -- her customer grubu list pricea gore desc
+							-- sıralandıktan sonra en üstte kalan order_id / alttaki de bunun price'ı.
 	first_value(net_price) over(partition by customer_id order by net_price desc)
 from cte
 
@@ -639,8 +694,263 @@ from cte
 
 select distinct YEAR(order_date) years, MONTH(order_date) months,
 	last_value(order_date) over(partition by YEAR(order_date), MONTH(order_date) 
-			order by order_date rows between unbounded preceding and unbounded following) last_date
+			order by order_date rows between unbounded preceding and unbounded following) last_date,
+			-- bunu first_value ile de desc order sonrası getirebiliriz.
+	first_value(order_date) over(partition by YEAR(order_date), MONTH(order_date) 
+			order by order_date DESC) last_date
 from sale.orders
+
+
+
+-- QUESTION
+-- Write a query that returns both of the followings:
+		-- The average product price (tüm ürünler icin tek bir ortalama P)
+		-- The average product price by orders.
+
+SELECT DISTINCT order_id, 
+		CAST(AVG(list_price) OVER()  AS decimal(18,2))as avg_price,  -- tüm ürünler icin istiyor, partition bya gerek yok
+		CAST(AVG(list_price) OVER(PARTITION BY order_id) AS decimal(18,2)) as avg_order_price 
+FROM sale.order_item;
+
+-- QUESTION 
+-- Which orders' average product price is lower than the overall average price?
+
+-- agg functionlar where icinde kullanılamaz..
+WITH cte AS
+(
+SELECT DISTINCT order_id, 
+		CAST(AVG(list_price) OVER()  AS decimal(18,2))as avg_price,  
+		CAST(AVG(list_price) OVER(PARTITION BY order_id) AS decimal(18,2)) as avg_order_price 
+FROM sale.order_item	
+)
+SELECT *
+FROM cte 
+WHERE avg_order_price < avg_price
+ORDER BY avg_order_price DESC; 
+
+-- ya da SQuery ile
+SELECT *
+FROM (
+	SELECT DISTINCT order_id, 
+		CAST(AVG(list_price) OVER()  AS decimal(18,2))as avg_price, 
+		CAST(AVG(list_price) OVER(PARTITION BY order_id) AS decimal(18,2)) as avg_order_price 
+FROM sale.order_item
+) t 
+WHERE avg_order_price < avg_price
+ORDER BY avg_order_price DESC; 
+
+
+-- QUESTION
+-- Calculate the stores' weekly cumulative count of orders for 2018
+
+
+SELECT DISTINCT o.store_id, s.store_name, 
+	DATEPART(WEEK, o.order_date) as week_of_year,
+	COUNT(o.order_id) OVER(PARTITION BY o.store_id, DATEPART(WEEK, o.order_date)) as total_orders,
+	COUNT(o.order_id) OVER(PARTITION BY o.store_id ORDER BY DATEPART(WEEK, o.order_date)) AS cum_total_orders  -- default
+					-- range between unbounded precedinng and current row oldugu icin yazmaya gerek kalmadi
+FROM sale.orders o
+LEFT JOIN sale.store s   -- normal join de olur, 3 store da var cunku burda da, ama bu tablo ana calisma tablomuz olsun
+						-- diye leftle devam edelim
+ON o.store_id = s.store_id
+WHERE YEAR(order_date) = 2018
+ORDER BY o.store_id, s.store_name
+
+
+-- QUESTION 
+-- Calculate 7-day moving average of the number of products sold between '2018-03-12' and '2018-04-12'.
+
+-- ilk önce tabloyu hazırlayalım
+SELECT a.order_id, a.order_date, b.quantity,
+	SUM(b.quantity) OVER(PARTITION BY a.order_date) as sum_quantity
+FROM sale.orders a 
+LEFT JOIN sale.order_item b 
+ON a.order_id = b.order_id
+WHERE a.order_date 
+		BETWEEN '2018-03-12' AND '2018-04-12'
+
+-- yukarıyı gorduk, distinct atmadan once ihtiyacımız olmayanları cikarizi
+
+SELECT DISTINCT a.order_date, 
+	SUM(b.quantity) OVER(PARTITION BY a.order_date) as sum_quantity
+FROM sale.orders a 
+LEFT JOIN sale.order_item b 
+ON a.order_id = b.order_id
+WHERE a.order_date 
+		BETWEEN '2018-03-12' AND '2018-04-12'
+
+-- moving avg icin window frame uygulamamız gerekir: current row ve 6 preceding
+-- sum üzerinden avg alamayacagimiz icin cte veya squery
+
+WITH cte AS(
+SELECT DISTINCT a.order_date, 
+	SUM(b.quantity) OVER(PARTITION BY a.order_date) as sum_quantity
+FROM sale.orders a 
+LEFT JOIN sale.order_item b 
+ON a.order_id = b.order_id
+WHERE a.order_date 
+		BETWEEN '2018-03-12' AND '2018-04-12'
+)
+SELECT *, 
+	AVG(sum_quantity) OVER(ORDER BY order_date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) sales_moving_average_7
+	-- rakamları kullanacagimiz zaman range degil row kullanılır
+FROM cte 
+
+--- SQuery olmadan da yapabilirdik: WF groupby ile kullanılabilir
+
+SELECT DISTINCT a.order_date, 
+	SUM(b.quantity) as sum_quantity,
+	AVG(SUM(b.quantity)) OVER(ORDER BY a.order_date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) sales_moving_average_7
+FROM sale.orders a 
+LEFT JOIN sale.order_item b 
+ON a.order_id = b.order_id
+WHERE a.order_date 
+		BETWEEN '2018-03-12' AND '2018-04-12'
+GROUP BY a.order_date
+
+
+-- QUESTION
+-- Write a query that returns the highest daily turnover amount for each week on a yearly basis.
+
+-- ilk tablomuzu hazırlayalım
+SELECT a.order_id, a.order_date, b.quantity, b.list_price, b.discount,
+		SUM(b.quantity*b.list_price*(1-b.discount)) 
+				OVER(PARTITION BY a.order_date) as daily_turnover
+		FROM sale.orders a 
+		LEFT JOIN sale.order_item b 
+		ON a.order_id = b.order_id
+-- hafta bazında ayıralım
+SELECT a.order_id, a.order_date, 
+		DATEPART(WEEK, a.order_date) week_of_year,
+		SUM(b.quantity*b.list_price*(1-b.discount)) 
+				OVER(PARTITION BY a.order_date) as daily_turnover
+		FROM sale.orders a 
+		LEFT JOIN sale.order_item b 
+		ON a.order_id = b.order_id
+
+-- yıl bazında her haftanın farklı gunlerınde farklı cirolar var, en yukseklerini alalım
+SELECT DISTINCT DATEPART(YEAR,a.order_date) order_year, 
+		DATEPART(WEEK, a.order_date) order_week,
+		SUM(b.quantity*b.list_price*(1-b.discount)) 
+				OVER(PARTITION BY a.order_date) as daily_turnover
+		FROM sale.orders a 
+		LEFT JOIN sale.order_item b 
+		ON a.order_id = b.order_id
+
+-- cok farklı cozum yolları var en yüksek ciro icin: 1. maxi deneyelim
+WITH cte AS 
+(
+SELECT DISTINCT DATEPART(YEAR,a.order_date) order_year, 
+		DATEPART(WEEK, a.order_date) order_week,
+		SUM(b.quantity*b.list_price*(1-b.discount)) 
+				OVER(PARTITION BY a.order_date) as daily_turnover
+		FROM sale.orders a 
+		LEFT JOIN sale.order_item b 
+		ON a.order_id = b.order_id
+)
+SELECT DISTINCT order_year, order_week, 
+			MAX(daily_turnover) OVER(PARTITION BY order_year, order_week) highest_turnover
+FROM cte;
+
+-- 2. first_value ile cozumu
+WITH cte AS 
+(
+SELECT DISTINCT DATEPART(YEAR,a.order_date) order_year, 
+		DATEPART(WEEK, a.order_date) order_week,
+		SUM(b.quantity*b.list_price*(1-b.discount)) 
+				OVER(PARTITION BY a.order_date) as daily_turnover
+		FROM sale.orders a 
+		LEFT JOIN sale.order_item b 
+		ON a.order_id = b.order_id
+)
+SELECT DISTINCT order_year, order_week, 
+			FIRST_VALUE(daily_turnover) OVER(PARTITION BY order_year, order_week 
+										ORDER BY daily_turnover DESC) AS highest_turnover
+FROM cte;
+
+-- Bu sorunun group by cozumu
+
+SELECT 
+	DISTINCT
+	YEAR(a.order_date) order_year,
+	DATEPART(WEEK, a.order_date) order_week,
+	FIRST_VALUE(SUM(b.quantity * b.list_price * (1-b.discount))) OVER(
+			PARTITION BY YEAR(a.order_date), DATEPART(WEEK, a.order_date)
+			ORDER BY SUM(b.quantity * b.list_price * (1-b.discount)) DESC) highest_turnover
+FROM
+	sale.orders a
+	LEFT JOIN
+	sale.order_item b ON a.order_id=b.order_id
+GROUP BY
+	a.order_date;
+
+
+-- QUESTION
+-- List customers who have at least 2 consecutive orders which are not shipped.
+
+-- kolaylastirmasi adina case ile teslim edilen edilmeyenleri yeni fieldde gosterelim
+SELECT order_id, customer_id, order_date, shipped_date,
+		CASE 
+		WHEN shipped_date IS NULL THEN 'not delivered' ELSE 'delivered' END AS delivery_status
+FROM sale.orders 
+ORDER BY customer_id, order_date;
+
+-- müşteri bazında delivery_statusun yanına bir oncekini lag ile yazdıralim.
+-- 2 not delivered yanyana geldiyse cevabi bulmus oluruz
+-- daha duzenli gorunsun diye cte alalım
+WITH t1 AS(
+	SELECT
+		order_id, customer_id, order_date, shipped_date,
+		CASE WHEN shipped_date IS NULL THEN 'not delivered' ELSE 'delivered' END delivery_status
+	FROM sale.orders
+), t2 AS(
+	SELECT
+		*,
+		LEAD(delivery_status) OVER(PARTITION BY customer_id ORDER BY order_id) next_delivery_status
+	FROM t1
+)
+SELECT	customer_id
+FROM t2
+WHERE delivery_status='not delivered' AND next_delivery_status='not delivered';
+
+-- 2nd solution: cte kullanmadan lead icinde expressionlar nasil kullanılır
+
+SELECT customer_id
+FROM(
+	SELECT
+		order_id, customer_id, order_date, shipped_date,
+		CASE WHEN shipped_date IS NULL THEN 'not delivered' ELSE 'delivered' END delivery_status,
+		LEAD(CASE WHEN shipped_date IS NULL THEN 'not delivered' ELSE 'delivered' END) OVER(
+			PARTITION BY customer_id ORDER BY order_date) next_delivery_status
+	FROM sale.orders
+) t
+WHERE 
+	delivery_status='not delivered' AND next_delivery_status='not delivered';
+
+-- CUME_DIST example
+-- write a query that returns the cumulative distribution of the list price in product table by brand
+
+SELECT brand_id, list_price,
+ROUND(CUME_DIST() OVER(PARTITION BY brand_id ORDER BY list_price), 3) AS cume_dist
+FROM product.product;
+
+-- PERCENT_RANK
+
+SELECT brand_id, list_price,
+ROUND(PERCENT_RANK() OVER(PARTITION BY brand_id ORDER BY list_price), 3) AS percent_dist
+FROM product.product;
+
+/*
+If there are 100 scores and the PERCENT_RANK is 90, that means that the score is higher than 90 scores. 
+If the CUME_DIST is 90, that means that the score is the 90th one in the list
+*/
+
+-- NTILE
+-- kac grup istersek tum satirlari o kadar bolup gruplar
+
+-- Divide customer into 5 groups based on the quantity of product they order
+
+
 
 -- *************************************************************************************************
 -- *************************************************************************************************
@@ -718,7 +1028,7 @@ SELECT *,
         LAST_VALUE(product_name) OVER(PARTITION BY product_category ORDER BY price DESC
                                     range between unbounded preceding and unbounded following) 
                                     -- DEFAULT range between unbounded preceding and current row
-                                    -- by changing it to the unbounded following, we assurer that if there are any cheaper
+                                    -- by changing it to the unbounded following, we assure that if there are any cheaper
                                     -- products after the current row, they'll also be taken into account.
                                     AS cheapest_product
     FROM dbo.product;
@@ -769,7 +1079,6 @@ SELECT *,
 
 -- NTILE
 -- Write a query to segregate all the expensive phones, mid range phones and the cheaper phones.
-
 
 -- Solution with cte
 WITH cte AS(
