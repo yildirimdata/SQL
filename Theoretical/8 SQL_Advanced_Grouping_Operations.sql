@@ -400,7 +400,7 @@ SELECT *
     WHERE order_date BETWEEN '2020-01-19' and '2020-01-25'
         ) AS source_table
     PIVOT (COUNT(order_id) FOR day_name 
-        IN ([Sunday], [Monday], [Tuesday], [Wednesday], [Thursday], [Friday], [Saturday])) pvt
+        IN ([Sunday], [Monday], [Tuesday], [Wednesday], [Thursday], [Friday], [Saturday])) pvt;
 
 -- pivot kullanıyorsak group by kullanılmaz. her ikisinin calisma mantigi tamamen ayrı cunku.
 -- yazdigimiz sorgu u-subquery icine alinip oyle kullanılabilir
@@ -418,7 +418,7 @@ FROM product.product p
 INNER JOIN product.brand b
 	ON p.brand_id=b.brand_id
 GROUP BY b.brand_name, p.model_year
-ORDER BY 1,2
+ORDER BY 1,2;
 
 
 --1. Select the columns from related table(s) as the base data for pivoting:
