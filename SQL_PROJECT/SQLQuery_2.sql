@@ -53,16 +53,21 @@ SELECT DISTINCT DaysTakenForShipping FROM dbo.e_commerce_data;  17
 Analyze the data by finding the answers to the questions below:
 
 1. Find the top 3 customers who have the maximum count of orders.
+
 2. Find the customer whose order took the maximum time to get shipping.
+
 3. Count the total number of unique customers in January and how many of them came 
 back every month over the entire year in 2011
+
 4. Write a query to return for each user the time elapsed between the first purchasing and the 
 third purchasing, in ascending order by Customer ID.
+
 5. Write a query that returns customers who purchased both product 11 and product 14, 
 as well as the ratio of these products to the total number of products purchased by the customer.
 */
 
 -- 1. Find the top 3 customers who have the maximum count of orders.
+
 SELECT TOP 3 Cust_ID, 
             Customer_Name, 
             COUNT(Ord_ID) as total_orders
@@ -82,6 +87,7 @@ SELECT TOP 1 Cust_ID,
 -- back every month over the entire year in 2011
 
 -- STEP 1: Who are the unique customers in January 2011 and their total number.
+
 SELECT DISTINCT Cust_ID, Customer_Name, 
                 COUNT(Cust_ID) OVER() as January_customers
         FROM dbo.e_commerce_data
@@ -90,7 +96,6 @@ SELECT DISTINCT Cust_ID, Customer_Name,
         GROUP BY Cust_ID, Customer_Name;
 
 -- STEP 2: How many of these customers also order in the other months of 2011?
-
 
 WITH cte as
 (SELECT DISTINCT Cust_ID
@@ -105,6 +110,7 @@ SELECT MONTH(d.Order_Date) as months_2011, COUNT(DISTINCT cte.Cust_ID) as total_
 
 
 -- to check it with a month example
+
 WITH cte AS 
 (
 SELECT DISTINCT Cust_ID, Customer_Name, COUNT(Cust_ID) OVER() as January_customers
@@ -147,12 +153,13 @@ SELECT t2.Cust_ID, t2.Customer_Name, t2.Order_Date, t2.third_order,
 
 -- STEP 1: creating a table which contains only the customers who purchased prod 11-14 and
 -- number of total products they bought.
+
 WITH cte as 
         (
         SELECT Cust_ID, Customer_Name
         FROM dbo.e_commerce_data
         WHERE Prod_ID = 'Prod_11'
-        INTERSECT 
+        INTERSECT -- intersection of prod_11 and 14 buyers
         SELECT Cust_ID, Customer_Name
         FROM dbo.e_commerce_data
         WHERE Prod_ID = 'Prod_14'
@@ -239,14 +246,57 @@ SELECT * FROM monthly_visits
 ORDER BY Year, Month;
 
 
--- 3. For each visit of customers, create the next month of the visit as a separate column.
-SELECT *, 
-        LEAD(Month) OVER(ORDER BY Year, Month) as next_month 
-FROM monthly_visits;
+-- 3. For each visit of customers, create the month of next visit as a separate column.
+
+SELECT Cust_ID, Customer_Name,
+		Ord_ID,
+        Order_Date,
+			MONTH(LEAD(Order_Date) OVER (PARTITION BY Cust_ID, Customer_Name ORDER BY Cust_ID, Order_Date)) as next_order_month
+				FROM dbo.e_commerce_data;
+
+
+-- 4. Calculate the monthly time gap between two consecutive visits by each customer.
+
+SELECT Cust_ID, Customer_Name,
+		Ord_ID,
+        Order_Date,
+			LEAD(Order_Date) OVER (PARTITION BY Cust_ID, Customer_Name ORDER BY Cust_ID, Order_Date) as next_order,
+            DATEDIFF(MONTH,Order_Date, 
+                    LEAD(Order_Date) OVER (PARTITION BY Cust_ID, Customer_Name ORDER BY Cust_ID, Order_Date)) 
+                    as time_gap_between_orders
+				FROM dbo.e_commerce_data;
+
+-- 5. Categorise customers using average time gaps. Choose the most fitted labeling model for you. For example:
+-- o Labeled as churn if the customer hasn't made another purchase in the months since they made their first purchase.
+-- o Labeled as regular if the customer has made a purchase every month. Etc.
+
+WITH cte AS(
+    SELECT Cust_ID, Customer_Name,
+	    	Ord_ID,
+            Order_Date,
+			LEAD(Order_Date) OVER (PARTITION BY Cust_ID, Customer_Name ORDER BY Cust_ID, Order_Date) as next_order,
+            DATEDIFF(MONTH,Order_Date, LEAD(Order_Date) 
+                    OVER (PARTITION BY Cust_ID, Customer_Name ORDER BY Cust_ID, Order_Date)) 
+                    as time_gap_between_orders
+				FROM dbo.e_commerce_data)
+SELECT Cust_ID, 
+        Customer_Name, 
+        AVG(time_gap_between_orders) as avg_time_gap,
+        CASE
+        WHEN AVG(time_gap_between_orders) IS NULL THEN 'Churn'
+        WHEN AVG(time_gap_between_orders) <= 24 THEN 'Regular'  -- if a customer orders at least once in 24 months: "regular"
+        WHEN AVG(time_gap_between_orders) > 24 THEN 'Potential Churn' -- if there is a huge time gap between orders, the company
+                                                                    -- should give more attention to this type of customers
+                                                                    -- as churn candidates.
+        END AS churn_status
+FROM cte 
+GROUP BY Cust_ID, Customer_Name
+ORDER BY AVG(time_gap_between_orders)
+
 
 /*
 Month-Wise Retention Rate
-Find month-by-month customer retention ratei since the start of the business.
+Find month-by-month customer retention rate since the start of the business.
 There are many different variations in the calculation of Retention Rate. But we will try to 
 calculate the month-wise retention rate in this project.
 So, we will be interested in how many of the customers in the previous month could be retained 

@@ -29,17 +29,21 @@ The general format for the CREATE TABLE command is:*/
 
 CREATE TABLE departments
 (
-	id BIGINT NOT NULL,
-	name VARCHAR(20) NULL,
+	id BIGINT NOT NULL,  -- PK icin IDENTITY kullanmak dah aiyi olur , kendi otomatik artirir sayiyi
+	name VARCHAR(20) NULL,  -- 20 is not char number, it's byte. but it corresponds to 1 char.
 	dept_name VARCHAR(20) NULL,
-	seniority VARCHAR(20) NULL,
-	graduation VARCHAR(20) NULL,
+	seniority VARCHAR(20) NULL,  -- NOT NULL DEFAULT "Human Resources" dersek eger hicbirsey girilmezse Human Resources yazar
+	graduation VARCHAR(20) NULL,  
 	salary BIGINT NULL,
 	hire_date DATE NULL,
         CONSTRAINT pk_1 PRIMARY KEY (id)
  ) ;
 
+-- SQL'de cift tirnak olamz, tek istisnasi aliaslar...
 -- ALTER TABLE
+
+-- Bir tabloda PRIMARY KEY'den başka bir alana, hatta birden fazla alana UNIQUE constrainti tanımlayabilirsin. (email vs. 
+-- gibi Unique olmasını istediğin birden fazla alan olabilir) Fakat yalnız bir tane PRIMARY key olabilir.  
 
 -- We can use ALTER TABLE statements to add and drop constraints.
 -- ALTER TABLE allows columns to be removed.
@@ -47,6 +51,12 @@ CREATE TABLE departments
 
 ALTER TABLE departments
 ADD CONSTRAINT unique_id_constraint UNIQUE (id);
+
+-- Varolan bir tabloya PRIMARY KEY tanımlamak için ise ALTER kullanıyoruz. Var olan tablolarda yapılacak her 
+-- türlü değişiklik ALTER komutu ile yapılıyo
+
+ALTER TABLE Calisanlar
+ADD CONSTRAINT PK_CalisanID PRIMARY KEY (id);   
 
 --  DROP TABLE
 -- The DROP TABLE will remove a table from the database. Make sure you have the correct database selected.
@@ -122,8 +132,9 @@ no default exists.
 This example uses INSERT to add a record to the departments table we created before in the DDL topic.
 */
 
-INSERT departments (id, name, dept_name, seniority, graduation, salary, hire_date)
+INSERT departments (id, name, dept_name, seniority, graduation, salary, hire_date)  -- NOT NULL constrainti olan tum sutular yazılmalı
 VALUES
+-- IDENTITY olsaydi sayilari zaten otomatik verecegi icin ilk kismi yazmazdik
 (10238,	'Eric'	   ,'Economics'	       ,'Experienced'	,'MSc' ,72000	,'2019-12-01'),
 (13378,	'Karl'	   ,'Music'	       ,'Candidate'	,'BSc' ,42000	,'2022-01-01'),
 (23493,	'Jason'	   ,'Philosophy'       ,'Candidate'	,'MSc' ,45000	,'2022-01-01'),
@@ -229,5 +240,123 @@ DELETE FROM departments;
 
 DELETE FROM departments WHERE id = 44552;
 
-
+Dikkat edilecek nokta WHERE ifadesi ile belli bir kayıt seçilip silinir.
+Eğer WHERE ifadesini kullanmadan yaparsak tablodaki bütün kayıtları silmiş oluruz.
 */
+
+-- PK coklayamaz ama FK coklayabilir. amacı da o zaten PK degil de FK olmasinin. Category tablosunda PK unique iken order
+-- tablosunda coklamasi gibi.
+
+
+--- A DATABASE EXAMPLE
+
+CREATE DATABASE LibraryDB
+USE LibraryDB
+--create schemas
+CREATE SCHEMA Book
+CREATE SCHEMA Person
+
+
+--Create Tables
+--create Book.Book table
+CREATE TABLE [Book].[Book](
+	[Book_ID] INT PRIMARY KEY NOT NULL,
+	[Book_Name] [nvarchar](100) NOT NULL,
+	[Author_ID] INT NOT NULL,
+	[Publisher_ID] INT NOT NULL);
+--create Book.Author table
+CREATE TABLE [Book].[Author](
+	[Author_ID] INT,
+	[Author_FirstName] NVARCHAR(50) NOT NULL,
+	[Author_LastName] NVARCHAR(50) NOT NULL);
+--create Book.Publisher Table
+CREATE TABLE [Book].[Publisher](
+	[Publisher_ID] INT PRIMARY KEY IDENTITY(1,1) NOT NULL,
+	[Publisher_Name] NVARCHAR(100) NULL);
+--create Person.Person table
+CREATE TABLE [Person].[Person](
+	[SSN] BIGINT PRIMARY KEY CHECK(LEN(SSN)=11),
+	--[SSN] BIGINT PRIMARY KEY CONSTRAINT ck_size CHECK(LEN(SSN)=11)
+	[Person_FirstName] NVARCHAR(50) NULL,
+	[Person_LastName] NVARCHAR(50) NULL);
+--create Person.Loan table
+CREATE TABLE [Person].[Loan](
+	[SSN] BIGINT NOT NULL,
+	[Book_ID] INT NOT NULL,
+	PRIMARY KEY ([SSN], [Book_ID])); --composite key
+--create Person.Person_Phone table
+CREATE TABLE [Person].[Person_Phone](
+	[Phone_Number] BIGINT PRIMARY KEY,
+	[SSN] BIGINT NOT NULL REFERENCES [Person].[Person]);
+--create Person.Person_Mail table
+CREATE TABLE [Person].[Person_Mail](
+	[Mail_ID] INT PRIMARY KEY IDENTITY(1,1),
+	[Mail] NVARCHAR(MAX) NOT NULL,
+	[SSN] BIGINT UNIQUE NOT NULL,
+	CONSTRAINT FK_SSNum FOREIGN KEY (SSN) REFERENCES Person.Person(SSN));
+
+	--- INSERT
+
+SELECT * FROM Person.Person;
+
+INSERT INTO Person.Person ([SSN], [Person_FirstName], [Person_LastName])
+-- PK var ama IDENTITY olmadigi icin sutun ismi yazacagiz
+-- kac sutun ayzarsak asagi o kadar deger yazmaliyiz yoksa error. girecegimiz degerler de o sıralamaya uygun olamlı
+	VALUES (78695647362, 'Zehra', 'Tekin')
+
+-- bunu ille tablodaki sutun sırasına yapmak zorunnda degiliz
+INSERT INTO Person.Person ([Person_FirstName],[SSN],  [Person_LastName])
+VALUES ('Eylem', 78695646543, 'Dogan')
+
+
+INSERT INTO Person.Person ([SSN], [Person_FirstName])
+-- last name null diye tanimlamistik
+	VALUES (28695123456, 'Zehra' )  -- PK ikiyle basladigi ve int oldugu icin eklemeyi o siraya gore yapar PK'de
+
+-- INTO kullanımı optional, ayrıca her defasında column names yazmak zorunda degiliz
+INSERT Person.Person  -- sutun ismi yoksa sql ne kadar sutun varsa o kadar giris yapacagiz diye algilar, dolayısıyla sutun sayısı
+-- kadar deger girmeliyiz.
+	VALUES (34567123456, 'Kerim', 'Oztürk' )
+
+INSERT Person.Person  -- NULL tanimladigimiz icin null da yazabiliriz
+	VALUES (34569876543, 'Ali', NULL )
+
+-- su pk'ya tekrar aynı sey girilecegi icin hata verir: PK Key Constraint
+INSERT INTO Person.Person ([SSN], [Person_FirstName], [Person_LastName])
+	VALUES (78695647362, 'Zehra', 'Tekin')
+
+-- CHECK ERROR: SSN 11 karakter olsun demistik
+INSERT INTO Person.Person ([SSN], [Person_FirstName], [Person_LastName])
+	VALUES (78695647, 'Zehra', 'Tekin')  -- The INSERT statement conflicted with the CHECK constraint "CK__Person__SSN__29572725". The conflict occurred in database 
+										-- "LibraryDB", table "Person.Person", column 'SSN'.
+
+-- DATATYPES error: bunnu girer str'yi convert eder
+INSERT INTO Person.Person ([SSN], [Person_FirstName], [Person_LastName])
+	VALUES ('78695647657', 'Zehra', 'Tekin')
+
+-- ama bu hata
+INSERT INTO Person.Person ([SSN],[Person_FirstName],[Person_LastName]) --ERROR
+	VALUES ('Zehra', 'Zehra', 'Tekin')  -- Error converting data type varchar to bigint.
+
+-- toplu veri girisi
+SELECT * FROM Person.Person_Mail
+SELECT * FROM Person.Person
+
+-- iki tane zehra tekin var, birisini silecegim
+DELETE FROM Person.Person WHERE SSN = 78695647657;
+
+INSERT INTO Person.Person_Mail (Mail, SSN) 
+-- bu error verdi: The INSERT statement conflicted with the FOREIGN KEY constraint "FK_SSNum". The conflict 
+-- occurred in database "LibraryDB", table "Person.Person", column 'SSN'.
+	VALUES ('eylemdog@gmail.com', 12345678977),
+		   ('zehrtek@hotmail.com', 78945612344),
+		   ('kemözt@gmail.com', 55008479341)
+
+		   
+-- PK ve FK aynı olmalı her ikisinde:
+INSERT INTO Person.Person_Mail (Mail, SSN) 
+	VALUES ('eylemdog@gmail.com', 78695646543),
+		   ('zehrtek@hotmail.com', 78695647362),
+		   ('kemözt@gmail.com', 34567123456)
+	
+SELECT * FROM Person.Person_Mail

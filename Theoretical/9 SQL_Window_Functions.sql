@@ -571,8 +571,10 @@ SELECT a.order_id,
 				FROM sale.orders a ,sale.staff b
 				WHERE a.staff_id=b.staff_id
 
+
+
 -- QUESTION
--- Write a query that returns the order date of the next sale of each staff (use the LEAD function)
+-- Write a query that returns the order date of the next sale (consecutive) of each staff (use the LEAD function)
 
 SELECT a.order_id,
 				   b.staff_id, 
