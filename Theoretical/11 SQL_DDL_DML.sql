@@ -345,6 +345,7 @@ SELECT * FROM Person.Person
 -- iki tane zehra tekin var, birisini silecegim
 DELETE FROM Person.Person WHERE SSN = 78695647657;
 
+-- -- FOREIGN KEy Constraint
 INSERT INTO Person.Person_Mail (Mail, SSN) 
 -- bu error verdi: The INSERT statement conflicted with the FOREIGN KEY constraint "FK_SSNum". The conflict 
 -- occurred in database "LibraryDB", table "Person.Person", column 'SSN'.
@@ -360,3 +361,208 @@ INSERT INTO Person.Person_Mail (Mail, SSN)
 		   ('kemözt@gmail.com', 34567123456)
 	
 SELECT * FROM Person.Person_Mail
+
+--foreign key constraint
+SELECT * FROM Person.Person
+
+INSERT INTO Person.Person_Mail (Mail, SSN) 
+VALUES ('ahm@gmail.com', 11111111111)  --ERROR
+
+--IDENTITY constraint
+INSERT INTO Person.Person_Mail (Mail_ID, Mail, SSN) 
+VALUES (10, 'takutlu@gmail.com', 46056688505) --ERROR
+-- biz zaten 1,1 yazmistik. asagida Mail_ID yazıp 10 yazarsak error: IDENTITY_INSERT is set to off
+-- bu set ile acilip kapanabilir gecici.
+
+-- illa manuel giris yapmak zorunda degiliz. select ile alabiliriz
+-- Insert with SELECT statement
+-- 1. tablo olusturalim bos
+CREATE TABLE Names ([Name] varchar(50))
+
+-- 2 selectle alaım: baska bir databaseden de alabiliriz mumkun bu
+
+SELECT * FROM Names;
+
+INSERT [Names]  -- select oldugu icin values yazmaya gerek yok
+SELECT first_name FROM [SampleRetail].sale.customer WHERE first_name LIKE '%M%';
+
+-- SELECT INTO
+--*************************************
+-- table cretae etmeden yeni table olusturururz:
+SELECT *  -- tum sutunları getir. nereye: INTO :
+INTO Person.Person_2  -- yeni bir tabel olusturuyoruz bu isimde, schema kullanmazsak dbo olarak olusturur
+FROM Person.Person  
+
+SELECT * FROM Person.Person_2
+
+-- different database
+SELECT *  -- select ınto ile tablo tasiriz yeni tablo ismi yazarak
+INTO Person.Person_3
+FROM [SampleRetail].sale.customer  -- hangi tabloya gore olusturacagimiz
+WHERE 1=0;  -- veriyi kendim girmek ama o tablonun sadece sutunlarını almak istiyorsak. where 1=0 sadece sutun ismi ve dtype tasir
+
+SELECT * FROM Person.Person_3
+
+-- DEFAULT constraint (insert default values)
+
+-- yani hic veri girilmezse bizim belirledigimiz veriler girer, unknown, 0 etc
+INSERT Book.Publisher
+DEFAULT VALUES
+
+SELECT * FROM Book.Publisher
+-- IDentityi kendisi atadi, digeri de yukarda NULL tanımladigimiz icind efault NULL girdi
+
+
+--****************************************************************************************************
+---- UPDATE
+
+-- koşul tanımlamak önemli. herhangi bir koşul tanımlamazsak tum tablıyu degistirir
+
+SELECT * FROM Person.Person_2
+
+UPDATE Person.Person_2  -- su tablyou update et
+SET Person_FirstName = 'Tahsin' -- neyi ayarlayacaksak onu yazarız
+-- wherre ile sart kosmazsak tum isimleri Tahsin yapar, tek satir istiyorsak belirlemeliyiz wher eile
+-- PK ile where, o unique cunku
+WHERE SSN= 28695123456;  -- tek zehrayı tahsin yaptik
+
+-- bunu baska türlü nasıl yaparız:
+-- UPDATE WITH JOIN
+SELECT * FROM Person.Person
+
+UPDATE Person.Person_2 SET Person_FirstName = B.Person_FirstName 
+FROM Person.Person_2 A Inner Join Person.Person B ON A.SSN=B.SSN
+
+SELECT * FROM Person.Person_2
+
+
+-- bozulan tabloyu join ile veya subquery ile uodate ederiz
+
+--- update with functions
+
+UPDATE Person.Person_2
+SET SSN = LEFT(SSN, 10); -- SSNleri 11 rakamdan 10 rakama dusurelim
+-- nerde kullanırız: bazen guvenlik icin sona harf konur bir tane, tamamını kaldirmak icin
+-- ya da iban nonun son 6sı hesap no, onu cekmek icin
+SELECT * FROM Person.Person_2;
+
+-- DELETE ****************************************************************
+
+SELECT * FROM Book.Publisher;
+
+INSERT Book.Publisher
+VALUES ('Iletisim', 'Can Yayin', 'IS Bank')
+
+DELETE FROM Book.Publisher
+
+-- ici bosalir talblonun. ama publisher_id kaldigi yerden baslar. once 4 vardi sildik sifilandi, 
+-- ama ilk ekleyecegimiz value 5ten başlar identity'de. eger truncate ile yapsaydık 1deen baslardi. truncate ve delete farki bu
+
+-- WHERE ile tek veya toplu kayıt silimi
+
+SELECT * FROM Person.Person_2;
+
+-- sadece tek satır delete
+DELETE FROM Person.Person_2
+WHERE SSN = 2869512345;
+
+-- fonknsiyonlarla kullanımı
+
+DELETE FROM Person.Person_2
+WHERE Person_LastName IS NULL;  -- last namei null olanalrı siler
+
+--- FOREIGN KEY_REFERENCE CONSTRAINT
+-- PK silersek bu baska yerde FK ise hata verir, 
+
+
+
+-- DROP ******************************
+-- databse objectsi tamamen ortadan kaldirir
+
+-- ne sileceksek DROP table veya drop view vs diye belirtiriz
+
+DROP TABLE [dbo].[Names];
+DROP TABLE [Person].Person_2;
+
+-- baska bir tabloya reference veren tablo dusurebilir miyiz
+-- foreign key constraint
+DROP TABLE Person.Person  -- pk'si ssn idi ve baska 2 tabloda bu ssn reference idi. bu düsmez error verir
+-- Could not drop object 'Person.Person' because it is referenced by a FOREIGN KEY constraint.
+
+-- TRUNCATE
+-- tablo ici bosaltilir
+
+TRUNCATE TABLE Person.Person_Mail;  -- artik tekrar giris yapinca pd 1den baslar
+-- once constrainti drop eder sonra tabloyu silebiliriz ama
+
+
+TRUNCATE TABLE Person.Person;  -- error
+
+
+-- ALTER  ************************************************************
+-- ************************************************************************************************************************
+
+-- Alanlardaki kısıtları (constraints) kaldırma işlemi kısıt adları ile yapıyoruz.
+-- Örnek syntax: ALTER TABLE tablo_adi DROP CONSTRAINT kisit_adi
+-- Bu yüzden başta constraint verirken kısıt adı tanımlaması yapmakta fayda var.
+
+-- ADD KEY CONSTRAINTS
+
+ALTER TABLE Book.Book 
+ADD CONSTRAINT FK_Author FOREIGN KEY (Author_ID) REFERENCES Book.Author (Author_ID)  --ERROR
+
+ALTER TABLE Book.Author 
+ADD CONSTRAINT pk_author PRIMARY KEY (Author_ID)  --ERROR
+
+ALTER TABLE Book.Author 
+ALTER COLUMN Author_ID INT NOT NULL
+
+ALTER TABLE Book.Book 
+ADD CONSTRAINT FK_Publisher FOREIGN KEY (Publisher_ID) REFERENCES Book.Publisher (Publisher_ID)
+
+--Person.Loan Table
+
+ALTER TABLE Person.Loan 
+ADD CONSTRAINT FK_PERSON FOREIGN KEY (SSN) REFERENCES Person.Person (SSN)
+
+ALTER TABLE Person.Loan 
+ADD CONSTRAINT FK_book FOREIGN KEY (Book_ID) REFERENCES Book.Book (Book_ID)
+--ON DELETE CASCADE / SET NULL / SET DEFAULT / NO ACTION --default
+--ON UPDATE CASCADE / SET NULL / SET DEFAULT / NO ACTION --default
+
+--ADD CHECK CONSTRAINTS
+ALTER TABLE Person.Person_Phone 
+ADD CONSTRAINT FK_Phone_check CHECK (Phone_Number BETWEEN 700000000 AND 9999999999)
+
+SELECT * FROM Person.Person_Phone; 
+SELECT * FROM Person.Person;
+
+INSERT Person.Person_Phone VALUES(600000000, 12345678977)
+
+--drop constraints
+ALTER TABLE Person.Person_Phone
+DROP CONSTRAINT FK_Phone_check;
+
+
+/* Bir SQL tablosundaki bir alana NOT NULL ya da NULL constrainti eklemek istersek Syntax'i şu şekildedir:*/
+ALTER TABLE tablo_adi 
+ALTER COLUMN  alan_adi veri_turu [NOT NULL | NULL ]
+-- örneğimizdeki alana NOT NULL kısıtı ekleyelim:
+ALTER TABLE orders_dimen2
+ALTER COLUMN Order_Date varchar NOT NULL
+/* Bir SQL tablosundaki bir alana UNIQUE constrainti eklemek istersek Syntax'i şu şekildedir:
+(Not: hata mesajı almamak için alandaki verilerin eşsiz olması yada tablonun boş olması gerekiyor.)*/
+ALTER TABLE tablo_adi 
+ADD CONSTRAINT kisit_adi UNIQUE(alan_adi)
+-- örneğimizdeki alana UNIQUE kısıtı ekleyelim:
+ALTER TABLE order_dimen2
+ADD CONSTRAINT order_date_kısıt UNIQUE (Order_Date)
+/* Bir SQL tablosundaki bir alana PRIMARY KEY constrainti eklemek istersek Syntax'i şu şekildedir:
+(Not: Kısıt isimleri önemlidir. Kaldırma işlemleri bu kısıt isimleri üzerinde yapılacaktır.*/
+ALTER TABLE tablo_Adi 
+ADD CONSTRAINT kisit_adi PRIMARY KEY (alan_adi)
+/* örneğimizde bir alanı önce NOT NULL sonra da PRIMARY KEY yapalım:
+(PRIMARY KEY için temel kurallardan biri boş geçilemez olmasıdır. 
+Bu yüzden pek tabi ki öncelikle bu alanın NOT NULL olması gerekmektedir.)*/
+ALTER TABLE order_dimens2 ALTER COLUMN Ord_id INT NOT NULL
+ALTER TABLE order_dimens2 ADD CONSTRAINT PK_ord_id PRIMARY KEY (Ord_id)
