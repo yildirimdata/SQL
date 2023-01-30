@@ -89,7 +89,7 @@ SELECT TOP 1 Cust_ID,
 -- STEP 1: Who are the unique customers in January 2011 and their total number.
 
 SELECT DISTINCT Cust_ID, Customer_Name, 
-                COUNT(Cust_ID) OVER() as January_customers
+                COUNT(Cust_ID) --OVER() as January_customers
         FROM dbo.e_commerce_data
         WHERE MONTH(Order_Date) = 1 
                 AND YEAR(Order_Date) = 2011
@@ -147,7 +147,6 @@ SELECT t2.Cust_ID, t2.Customer_Name, t2.Order_Date, t2.third_order,
         FROM t2 
         WHERE t2.order_number = 1;
 
-
 -- 5. Write a query that returns customers who purchased both product 11 and product 14, 
 -- as well as the ratio of these products to the total number of products purchased by the customer.
 
@@ -176,14 +175,15 @@ WITH cte as
 
 WITH cte as 
     (
-    SELECT Cust_ID, Customer_Name
-        FROM dbo.e_commerce_data
-        WHERE Prod_ID = 'Prod_11'
-    INTERSECT 
-    SELECT Cust_ID, Customer_Name
-        FROM dbo.e_commerce_data
-        WHERE Prod_ID = 'Prod_14'
-    ), t2 as (
+        SELECT Cust_ID, Customer_Name
+            FROM dbo.e_commerce_data
+            WHERE Prod_ID = 'Prod_11'
+        INTERSECT 
+        SELECT Cust_ID, Customer_Name
+            FROM dbo.e_commerce_data
+            WHERE Prod_ID = 'Prod_14'
+    )
+, t2 as (
         SELECT DISTINCT cte.Cust_ID, cte.Customer_Name,
             SUM(CASE WHEN d.prod_ID IN ('Prod_11', 'Prod_14') THEN 1 ELSE 0 END) 
             OVER (PARTITION BY cte.Cust_ID, cte.Customer_Name) as prod_11_14,
@@ -191,10 +191,12 @@ WITH cte as
         FROM cte, dbo.e_commerce_data d 
         WHERE cte.Cust_ID = d.Cust_ID AND cte.Customer_Name = d.Customer_Name
                 )
-    SELECT t2.Cust_ID, t2.Customer_Name, t2.prod_11_14, t2.total_products,
-            100 * t2.prod_11_14/t2.total_products as ratio_11_14
-            FROM t2
-            ORDER BY t2.Cust_ID;
+SELECT t2.Cust_ID, 
+        t2.Customer_Name, 
+        t2.prod_11_14, t2.total_products,
+        100 *t2.prod_11_14/t2.total_products as Percentage_11_14
+        FROM t2
+        ORDER BY t2.Cust_ID;
 
 
 /*

@@ -19,18 +19,84 @@ languages because they can:
 - Easier maintenance
 - Improved performance
 
+--Türkçe'de "saklı yordam" adıyla bilinmekte olup veritabanında saklanan SQL ifadeleridir. Kısaca derlenmiş 
+SQL cümleciği denebilir.
+--İstenilen zamanda istediğiniz yerde çağırabileceğiniz, parametre alarak bir değer döndürebilen dinamik kod bloklarıdır.
+--Veritabanlarında saklandığından dolayı daha hızlı çalışırlar. 
+--SP'ler ilk çalıştırıldığında derlenirler ve hafızaya alınırlar, tekrar çalıştıklarında derlenmezler. 
+Veritabanında derlenmiş bir "execution plan" halinde saklanırlar. Bu nedenle daha iyi performans sağlarlar.
+--SQL komutu çağırıldığında ayrıştırma, derleme ve çalıştırma aşamalarından geçmektedir. SP'ler daha önceden 
+derlendikleri için, normal kullanılan bir SQL sorgusundan çok daha performanslı olup ayrıca ağ trafiğini de yormazlar.
+--Parametrelerle kullanılabiliyor olması veri temininde esneklik sağlar.
+
+
 How to Create a Stored Procedure Using Transact-SQL
 
 To create a procedure in Query Editor:
 
 After opening a new Query window, you can use the following as the most basic syntax:*/
 
-CREATE PROCEDURE sp_FirstProc AS
-BEGIN
+CREATE PROCEDURE sp_FirstProc -- CRETAE PROC da yeterli. sportprocedure(sp) ile baslarsak ne olduguna atifta bulunuruz
+AS 
+BEGIN 
 	SELECT 'Welcome to procedural world.' AS message
 END
 -- Call the stored procedure as follows:
 EXECUTE sp_FirstProc;  -- we get the result below as a table.
+
+-- EXECUTE yerine EXEC de diyebiliriz
+
+CREATE PROC spProducts
+AS
+BEGIN
+     SELECT
+          product_name,
+          model_year,
+          list_price
+     FROM
+          product.product
+     ORDER BY
+          list_price
+END
+GO
+-- programmability icinde stored procedures klasorune geldi SRetail altindaki
+
+-- nasil calistiririz 1
+EXECUTE spProducts;
+
+-- 2
+EXEC spProducts;
+
+--- cok tercih edilmeyen 3ç  kullanım
+
+spProducts;
+
+-- Degistirmek icin: list_pricei desc yapalım
+
+ALTER PROC spProducts -- create yerine alter yapariz ve gerekli islemi (desc) icine
+AS
+BEGIN
+     SELECT
+          product_name,
+          model_year,
+          list_price
+     FROM
+          product.product
+     ORDER BY
+          list_price DESC
+END
+GO
+
+EXEC spProducts
+GO
+
+-- Kaldırmak icin
+
+DROP PROCEDURE spProducts
+GO
+
+DROP PROCEDURE dbo.sp_SecondProc
+GO
 
 -- using the ALTER PROCEDURE as below, you can change the query you wrote in the procedure.
 
@@ -81,6 +147,22 @@ RETURN @salary
 END
 GO
 
+-- Let's modify the procedure "sp_SecondProc":
+
+ALTER PROCEDURE sp_SecondProc @name varchar(20) = 'Jack', @salary INT OUTPUT
+AS
+BEGIN
+
+-- Set a value in the output parameter by using input parameter.
+SELECT @salary = salary
+FROM dbo.department
+WHERE name = @name
+
+-- Returns salary of @name
+RETURN @salary
+END
+GO
+
 -- CALL/EXECUTE THE PROCEDURE
 
 -- Declare the variables for the output salary.
@@ -97,21 +179,64 @@ GO
 -- You can assign a default value for the parameters. If any value that is used as a parameter value is NULL, then 
 -- the procedure continues with the default parameter.
 
--- Let's modify the procedure "sp_SecondProc":
+-- another example
 
-ALTER PROCEDURE sp_SecondProc @name varchar(20) = 'Jack', @salary INT OUTPUT
+CREATE PROC sp_products
+	(
+		@model_year INT  -- parametreleri create ederkeen () icinde, @ ile ve dtype yazarak yapmaya dikkat
+		,@prod_name VARCHAR(MAX)  -- sınırlamamak icin max
+	)
+AS
+BEGIN  -- buraya kadar cte gibi olusturduk. simdi yukleme
+	SELECT
+		product_name
+		,model_year
+		,list_price
+	FROM
+		product.product
+	WHERE
+		model_year=@model_year  -- filtreleme kisminda parametreleri kullanırız
+		AND product_name LIKE '%' + @prod_name + '%'  -- burası '%speaker%' yapacak
+END
+
+
+EXECUTE sp_products @model_year=2020, @prod_name='speaker'  -- model yılı 2020 olan ve prod_nameinde speaker gecenler call
+GO
+
+-- burada iki parametreyi de optional yapmadigimiz icin ikisini de yazmamiz gerekir. ama istersek birini optional da
+-- yapabiliriz. = NULL dersek null dedigimizi yazmasak da olur EXEC'te, veya 2020 dersek birsey yazşlmadiginda
+-- default 2020 getirir.
+
+---optional parameters
+
+ALTER PROC sp_products  -- degistirdigimiz icin ALTER, bastan tanimlarken create
+	(
+		@model_year INT=NULL  -- istersek 2021 yazarız, kullanıcı birsey girmezse 2021ler gelir
+		,@prod_name VARCHAR(MAX)
+	)
 AS
 BEGIN
-
--- Set a value in the output parameter by using input parameter.
-SELECT @salary = salary
-FROM dbo.department
-WHERE name = @name
-
--- Returns salary of @name
-RETURN @salary
+	SELECT
+		product_name
+		,model_year
+		,list_price
+	FROM
+		product.product
+	WHERE
+		(@model_year IS NULL OR model_year=@model_year)
+		AND product_name LIKE '%' + @prod_name + '%'
 END
+
+
+EXECUTE sp_products @prod_name='speaker'
 GO
+
+
+--drop procedure
+
+DROP PROCEDURE sp_products
+
+
 
 /*
 VARIABLES
@@ -140,7 +265,29 @@ DECLARE @myfirstvar INT
 
 DECLARE @LastName NVARCHAR(20), @FirstName NVARCHAR(20), @State NCHAR(2);
 
+DECLARE @number AS INT -- as optional
 
+-- buna nasil deger atayacagiz, set ile:
+
+SET @number= 10
+SELECT @number;  -- declareden itibaren hepsini birlikte calistirirsak calisir deger dondurur
+
+-- printle tablosuz goruruz
+DECLARE @number INT -- as optional
+SET @number= 10
+PRINT @number
+GO  -- go yazarak yukardaki kirmiziligi kaldiririz
+
+---- multiple variables
+
+DECLARE @num1 INT, @num2 INT, @SUM INT
+-- asagidaki gibi heosine tek tek atayacagimiz gibi SET veya SELECT icinde yanyana hepsini bir den de atayabiliriz 
+SET @num1 = 10  -- assign yolu 1
+SELECT @num2 = 20  -- assign yolu 2
+SELECT @SUM = @num1 + @num2 -- assign yolu 3 
+SELECT @SUM  -- to call
+
+---
 
 /* ☝ Note: 
 - The names of some Transact-SQL system functions begin with two at signs (@@). Although the @@functions are referred to as 
@@ -189,6 +336,29 @@ FROM dbo.department
 --Call the variable
 SELECT @var1 AS last_id;
 
+-- Referring to a variable in a query
+
+DECLARE @cust_id INT = 5  -- bu sekilde defger atama cok kullanlımayan bir yontem
+
+SELECT * FROM sale.customer
+WHERE customer_id = @cust_id  -- decalre kismini da birlikte calistirmazsak calismaz
+
+-- Global variables
+
+SELECT @@ROWCOUNT
+
+SELECT @@ROWCOUNT FROM product.product
+
+SELECT * FROM product.product
+SELECT @@ROWCOUNT
+
+SELECT @@VERSION
+SELECT @@SERVERNAME
+SELECT @@SERVICENAME
+
+-- view ile paramtere kullanamayız, procedure ile kullanırız. view'dan daha hızlı. -- ozellikle 3-4 taloyu join edip vs bir
+-- procedure olusturunca cok faydali. viewda her defasında filtreleme yapamayız burda yaparız vs vs.
+
 /*
 IF STATEMENTS
 
@@ -229,6 +399,98 @@ ELSE
 -- 2
 IF 1 = 1 PRINT 'Boolean_expression is true.'  
 ELSE PRINT 'Boolean_expression is false.' ;
+
+-- exapmle
+
+-- ordr_item tablosund satilan urunlerin eyaletleriyle ilgili bir ornek
+
+DECLARE @prod_id INT, @total_quantity INT 
+SET @prod_id = 20  -- 20 idli ürüne atadik 
+
+
+SET @total_quantity = (SELECT SUM(quantity) FROM sale.order_item
+WHERE product_id = @prod_id)
+
+IF @total_quantity >= 50  -- 50 den büyükse eyaletlerini say
+	BEGIN -- yukard tesk satır oldugu icin yazmamistik
+		SELECT COUNT(DISTINCT c.state ) as total_states
+		FROM sale.order_item a, sale.orders b, sale.customer c 
+		WHERE a.order_id = b.order_id AND b.customer_id = c.customer_id
+				AND a.product_id = @prod_id  -- veya 20
+	END -- begin yazdiktan sonra hmen yaz end'i unutmamak icin
+
+-- decalreden itibaren tumunu calistirmazsak calismaz.
+
+ELSE IF @total_quantity < 50  -- eyalet isimlerini getir
+BEGIN 
+	SELECT STRING_AGG([state], ',')  -- isimleri yanyana getirir aynı satirda
+		FROM(
+		SELECT DISTINCT c.state FROM sale.order_item a, sale.orders b, sale.customer c 
+		WHERE a.order_id = b.order_id AND b.customer_id = c.customer_id
+				AND a.product_id = @prod_id) subq 
+	END
+ELSE
+	PRINT 'This product has not been ordered yet.'
+
+
+--- else ifi calistiralim
+DECLARE @prod_id INT, @total_quantity INT 
+SET @prod_id = 140  
+
+
+SET @total_quantity = (SELECT SUM(quantity) FROM sale.order_item
+WHERE product_id = @prod_id)
+
+IF @total_quantity >= 50  -- 50 den büyükse eyaletlerini say
+	BEGIN -- yukard tesk satır oldugu icin yazmamistik
+		SELECT COUNT(DISTINCT c.state ) as total_states
+		FROM sale.order_item a, sale.orders b, sale.customer c 
+		WHERE a.order_id = b.order_id AND b.customer_id = c.customer_id
+				AND a.product_id = @prod_id  -- veya 20
+	END -- begin yazdiktan sonra hmen yaz end'i unutmamak icin
+
+-- decalreden itibaren tumunu calistirmazsak calismaz.
+
+ELSE IF @total_quantity < 50  -- eyalet isimlerini getir
+BEGIN 
+	SELECT STRING_AGG([state], ',')  -- isimleri yanyana getirir aynı satirda
+		FROM(
+		SELECT DISTINCT c.state FROM sale.order_item a, sale.orders b, sale.customer c 
+		WHERE a.order_id = b.order_id AND b.customer_id = c.customer_id
+				AND a.product_id = @prod_id) subq 
+	END
+ELSE
+	PRINT 'This product has not been ordered yet.'
+
+
+--- else
+DECLARE @prod_id INT, @total_quantity INT 
+SET @prod_id = 540 
+
+
+SET @total_quantity = (SELECT SUM(quantity) FROM sale.order_item
+WHERE product_id = @prod_id)
+
+IF @total_quantity >= 50  -- 50 den büyükse eyaletlerini say
+	BEGIN -- yukard tesk satır oldugu icin yazmamistik
+		SELECT COUNT(DISTINCT c.state ) as total_states
+		FROM sale.order_item a, sale.orders b, sale.customer c 
+		WHERE a.order_id = b.order_id AND b.customer_id = c.customer_id
+				AND a.product_id = @prod_id  -- veya 20
+	END -- begin yazdiktan sonra hmen yaz end'i unutmamak icin
+
+-- decalreden itibaren tumunu calistirmazsak calismaz.
+
+ELSE IF @total_quantity < 50  -- eyalet isimlerini getir
+BEGIN 
+	SELECT STRING_AGG([state], ',')  -- isimleri yanyana getirir aynı satirda
+		FROM(
+		SELECT DISTINCT c.state FROM sale.order_item a, sale.orders b, sale.customer c 
+		WHERE a.order_id = b.order_id AND b.customer_id = c.customer_id
+				AND a.product_id = @prod_id) subq 
+	END
+ELSE
+	PRINT 'This product has not been ordered yet.'
 
 /*
 WHILE LOOPS
@@ -277,6 +539,60 @@ BEGIN
 		CONTINUE -- If the condition isn't met, the loop will continue.
 END;
 
+-- Do not forget to use BEGIN-END. without begin-end it would be an infinite loop
+
+DECLARE @num_of_iter INT, @counter INT 
+
+SET @num_of_iter = 10 
+SET @counter= 0 
+
+WHILE @counter <= @num_of_iter 
+		BEGIN
+			PRINT @counter
+			SET @counter += 1 -- bunu yazmazsak inf loop
+		END
+GO 
+
+--- example: kac branda ait kac product var yazdıralım
+
+DECLARE @counter INT, @max_brand_id INT, @total_products INT 
+
+SET @counter = 1 -- brand_id 1den baslar
+SET @max_brand_id = (SELECT MAX(brand_id) FROM product.brand)  -- () unutma
+
+WHILE @counter <= @max_brand_id
+	BEGIN 
+			SET @total_products = (SELECT COUNT(product_id) FROM product.product WHERE brand_id = @counter)	
+			-- ttoal productsı disarda da belirleyebiliriz burada da
+			PRINT 'There are ' + CAST(@total_products AS VARCHAR(10)) 
+								+ ' products belonging to brand_id ' 
+								+ CAST(@counter AS VARCHAR (2))
+			-- int istemistik, castle strye cevirmezsek error verir
+			
+			SET @counter +=1
+	END 
+
+--- Using break to exit loop: 
+-- 20den alta dustugunde loopdan cik
+DECLARE @counter INT, @max_brand_id INT, @total_products INT 
+
+SET @counter = 1 -- brand_id 1den baslar
+SET @max_brand_id = (SELECT MAX(brand_id) FROM product.brand)  -- () unutma
+
+WHILE @counter <= @max_brand_id
+	BEGIN 
+			SET @total_products = (SELECT COUNT(product_id) FROM product.product WHERE brand_id = @counter)	
+			
+			IF @total_products <20 BREAK
+
+			PRINT 'There are ' + CAST(@total_products AS VARCHAR(10)) 
+								+ ' products belonging to brand_id ' 
+								+ CAST(@counter AS VARCHAR (2))
+			
+			SET @counter +=1
+	END 
+
+
 /*
 USER DEFINED FUNCTIONS
 
@@ -312,6 +628,8 @@ input parameter: @seniority. Then, calculates the average salary according to th
 to @seniority parameter. The variable @avg_salary, declared in the function, catches the result average salary. 
 Finally, the function returns @avg_salary variable as a result.*/
 
+-- procedurdaki execute yerine return ile kullanacgiz. tablo genelinde kullanacagiz.
+
 CREATE FUNCTION dbo.ufnGetAvgSalary(@seniority VARCHAR(15))  
 RETURNS BIGINT   
 AS   
@@ -329,6 +647,106 @@ END;
 -- to call the function
 SELECT dbo.ufnGetAvgSalary('Senior') as avg_salary
 
+-- join yapmamiza gerek kalmadan tablolar arası bilgi alisa imkan tanir. bu sadece function ile olur
+-- db altinda programmability altinda functions klasorunde depolnair
+
+-- aldigini upper yapan bir func tanimlayalim
+CREATE FUNCTION fnc_uppertext  -- genelde fn veya fnc ile baslanir
+	(
+		@inputtext VARCHAR(MAX)
+	) 
+-- store proceduredan farkli olarak a'e gecmeden once returns 
+RETURNS VARCHAR(MAX)
+AS	
+	BEGIN 
+		RETURN UPPER(@inputtext)  -- aldigin pramaetreyi upper yap
+	END
+
+-- nasil cagiracagiz: select veya print ile
+
+SELECT dbo.fnc_uppertext('galatasaray') -- parametredekinin aksine () icine yazarız inputu
+-- schema ismiyle calistirinca gelir ancak, bu nedenle dbo basina
+
+-- printle cagiralim
+PRINT dbo.fnc_uppertext('galatasaray')
+
+-- store proceduredan farkli olarak tablolarla kullanabiliriz.
+
+SELECT first_name, dbo.fnc_uppertext(first_name) as upper_names FROM sale.customer;
+
+-- deleting a function
+
+DROP FUNCTION dbo.fnc_uppertext;  -- paramteresini yazmayız, sadece function ismi
+ 
+
+-- example 2:
+
+CREATE FUNCTION fnc_prod_quantity  
+	(
+		@prod_id INT
+	) 
+
+RETURNS INT  -- sayi dondurecek yine bu nedenle int 
+AS	
+	BEGIN 
+		RETURN (SELECT SUM(quantity) FROM sale.order_item WHERE product_id = @prod_id)
+	END
+GO 
+
+SELECT dbo.fnc_prod_quantity(20)  
+
+-- sale.order_itemda olusturduj ama product_tablosunu yanına getirebiliriz
+SELECT *, dbo.fnc_prod_quantity(product_id) FROM product.product
+
+
+-- how to drop
+DROP FUNCTION dbo.fnc_prod_quantity
+
+
+-- 
+
+CREATE FUNCTION svf_delivery 
+	(
+		@order_id INT
+	)
+RETURNS VARCHAR(50)
+AS
+	BEGIN
+			DECLARE @order_status VARCHAR(50)
+			DECLARE @date_diff INT 
+
+			SELECT @date_diff = DATEDIFF(day, required_date, shipped_date) 
+			FROM sale.orders
+			WHERE order_id = @order_id
+
+			IF  @date_diff > 0
+				SET @order_status = 'Late Delivery'
+			ELSE IF  @date_diff < 0	
+				SET @order_status = 'Early Delivery'
+			ELSE IF  @date_diff = 0	
+				SET @order_status = 'On Time Delivery'	
+			ELSE 
+				SET @order_status = 'Pending'	
+
+			RETURN @order_status
+	END 
+GO 
+
+PRINT dbo.svf_delivery(1)  -- 1 nolu siparise bakalım
+PRINT dbo.svf_delivery(100)
+
+-- tabloda kullanalım bunu
+SELECT *, dbo.svf_delivery(order_id) FROM sale.orders;
+GO
+
+-- filtering with function: Where  
+SELECT * FROM sale.orders WHERE dbo.svf_delivery(order_id) = 'Pending';
+
+
+-- check constraintler icin function yazılır genelde
+-- using scalar-valued functions with check constraint
+
+
 /*
 Table-Valued Function Example:
 
@@ -339,7 +757,7 @@ in the RETURN statement we specify what will return the function among the paren
 CREATE FUNCTION dbo.dept_of_employee (@dept_name VARCHAR(15))  
 RETURNS TABLE  
 AS  
-RETURN   
+RETURN   -- begin end yeribe return burda artik tvf icin
 (  
 	SELECT id, name, salary
 	FROM dbo.department
@@ -371,8 +789,12 @@ BEGIN
 	FROM dbo.department
 	WHERE name = @name
 RETURN
-END;
-
+END
+GO 
 -- call the function
 SELECT * FROM dbo.raised_salary('Eric');
 
+
+-- example
+
+CREATE FUNCTION tvf_prod_info
