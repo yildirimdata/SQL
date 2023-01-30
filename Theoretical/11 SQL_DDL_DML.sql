@@ -27,10 +27,10 @@ CREATE TABLE has three parts (see below):
 - Table Constraint 
 The general format for the CREATE TABLE command is:*/
 
-CREATE TABLE departments
+CREATE TABLE departmentsss
 (
-	id BIGINT NOT NULL,  -- PK icin IDENTITY kullanmak dah aiyi olur , kendi otomatik artirir sayiyi
-	name VARCHAR(20) NULL,  -- 20 is not char number, it's byte. but it corresponds to 1 char.
+	id BIGINT NOT NULL,  -- PK icin IDENTITY kullanmak daha iyi olur , kendi otomatik artirir sayiyi
+	name VARCHAR(20) NULL,  -- 20 is not char number, it's byte. but each byte corresponds to 1 char.
 	dept_name VARCHAR(20) NULL,
 	seniority VARCHAR(20) NULL,  -- NOT NULL DEFAULT "Human Resources" dersek eger hicbirsey girilmezse Human Resources yazar
 	graduation VARCHAR(20) NULL,  
@@ -40,16 +40,17 @@ CREATE TABLE departments
  ) ;
 
 -- SQL'de cift tirnak olamz, tek istisnasi aliaslar...
--- ALTER TABLE
 
 -- Bir tabloda PRIMARY KEY'den başka bir alana, hatta birden fazla alana UNIQUE constrainti tanımlayabilirsin. (email vs. 
--- gibi Unique olmasını istediğin birden fazla alan olabilir) Fakat yalnız bir tane PRIMARY key olabilir.  
+-- gibi Unique olmasını istediğin birden fazla alan olabilir) Fakat yalnız bir tane PRIMARY key olabilir. 
+
+-- ALTER TABLE 
 
 -- We can use ALTER TABLE statements to add and drop constraints.
 -- ALTER TABLE allows columns to be removed.
 -- When a constraint is added, all existing data are verified for violations.
 
-ALTER TABLE departments
+ALTER TABLE dbo.departmentsss
 ADD CONSTRAINT unique_id_constraint UNIQUE (id);
 
 -- Varolan bir tabloya PRIMARY KEY tanımlamak için ise ALTER kullanıyoruz. Var olan tablolarda yapılacak her 
@@ -62,7 +63,7 @@ ADD CONSTRAINT PK_CalisanID PRIMARY KEY (id);
 -- The DROP TABLE will remove a table from the database. Make sure you have the correct database selected.
 -- Executing the below SQL DROP TABLE statement will remove the table departments from the database.
 
-DROP TABLE departments;
+DROP TABLE departmentsss;
 
 /*
 Key Terms
@@ -79,8 +80,7 @@ Key Terms
 --- DATA MANIPULATION LANGUAGE (DML)
 
 /*
-The SQL data manipulation language (DML) is used to query and modify database data. 
-Below we will describe how to use the SELECT, INSERT, UPDATE, and DELETE SQL DML command statements.
+The SQL data manipulation language (DML) is used to query and modify database data. Main SQL DML command statements are:
 
 SELECT – to query data in the database
 INSERT – to insert data into a table
@@ -91,7 +91,8 @@ DELETE – to delete data from a table
 
 - Each clause in a statement should begin on a new line.
 - The beginning of each clause should line up with the beginning of other clauses.
-- If a clause has several parts, they should appear on separate lines and be indented under the start of the clause to show the relationship.
+- If a clause has several parts, they should appear on separate lines and be indented under the start of the 
+		clause to show the relationship.
 - Upper case letters are used to represent reserved words.
 - Lower case letters are used to represent user-defined words.
 
@@ -107,9 +108,8 @@ The INSERT statement adds rows to a table. In addition,
 - Columns with the IDENTITY property should not be explicitly listed in the column_list or values_clause.
 Its syntax:
 
-INSERT [INTO] Table_name | view name [column_list]
+INSERT [INTO] Table_name | view name (column_list)
 DEFAULT VALUES | values_list | select statement
-
 
 When inserting rows with the INSERT statement, these rules apply:
 
@@ -132,29 +132,29 @@ no default exists.
 This example uses INSERT to add a record to the departments table we created before in the DDL topic.
 */
 
-INSERT departments (id, name, dept_name, seniority, graduation, salary, hire_date)  -- NOT NULL constrainti olan tum sutular yazılmalı
+INSERT departmentsss (id, name, dept_name, seniority, graduation, salary, hire_date)  -- NOT NULL constrainti olan tum sutular yazılmalı
 VALUES
 -- IDENTITY olsaydi sayilari zaten otomatik verecegi icin ilk kismi yazmazdik
 (10238,	'Eric'	   ,'Economics'	       ,'Experienced'	,'MSc' ,72000	,'2019-12-01'),
-(13378,	'Karl'	   ,'Music'	       ,'Candidate'	,'BSc' ,42000	,'2022-01-01'),
-(23493,	'Jason'	   ,'Philosophy'       ,'Candidate'	,'MSc' ,45000	,'2022-01-01'),
+(13378,	'Karl'	   ,'Music'	       ,'Candidate'			,'BSc' ,42000	,'2022-01-01'),
+(23493,	'Jason'	   ,'Philosophy'       ,'Candidate'		,'MSc' ,45000	,'2022-01-01'),
 (30766,	'Jack'     ,'Economics'	       ,'Experienced'	,'BSc' ,68000	,'2020-06-04'),
-(36299,	'Jane'	   ,'Computer Science' ,'Senior'	,'PhD' ,91000	,'2018-05-15'),
+(36299,	'Jane'	   ,'Computer Science' ,'Senior'		,'PhD' ,91000	,'2018-05-15'),
 (40284,	'Mary'	   ,'Psychology'       ,'Experienced'	,'MSc' ,78000	,'2019-10-22'),
-(43087,	'Brian'	   ,'Physics'	       ,'Senior'	,'PhD' ,93000	,'2017-08-18'),
-(53695,	'Richard'  ,'Philosophy'       ,'Candidate'	,'PhD' ,54000	,'2021-12-17'),
+(43087,	'Brian'	   ,'Physics'	       ,'Senior'		,'PhD' ,93000	,'2017-08-18'),
+(53695,	'Richard'  ,'Philosophy'       ,'Candidate'		,'PhD' ,54000	,'2021-12-17'),
 (58248,	'Joseph'   ,'Political Science','Experienced'	,'BSc' ,58000	,'2021-09-25'),
 (63172,	'David'	   ,'Art History'      ,'Experienced'	,'BSc' ,65000	,'2021-03-11'),
-(64378,	'Elvis'	   ,'Physics'	       ,'Senior'	,'MSc' ,87000	,'2018-11-23'),
+(64378,	'Elvis'	   ,'Physics'	       ,'Senior'		,'MSc' ,87000	,'2018-11-23'),
 (96945,	'John'	   ,'Computer Science' ,'Experienced'	,'MSc' ,80000	,'2019-04-20'),
 (99231,	'Santosh'  ,'Computer Science' ,'Experienced'	,'BSc' ,74000	,'2020-05-07');
 
 -- SELECT
--- The SELECT statement, or command, allows the user to extract data from tables, based on specific 
--- criteria.
+-- The SELECT statement is used to extract data from tables, based on specific criteria.
 
 /*
 Insert into an IDENTITY column
+
 By default, data cannot be inserted directly into an IDENTITY column; however, if a row is accidentally 
 deleted, or there are gaps in the IDENTITY column values, you can insert a row and specify the IDENTITY 
 column value.
@@ -164,11 +164,11 @@ To allow an insert with a specific identity value, the IDENTITY_INSERT option sh
 If the id column in the departments table was an IDENTITY column and it was desired to add an id to 
 this column, it could be done as follows:*/
 
-SET IDENTITY_INSERT departments ON;
-INSERT departments (id, name, dept_name, seniority, graduation, salary, hire_date)
+SET IDENTITY_INSERT departmentsss ON;
+INSERT departmentsss (id, name, dept_name, seniority, graduation, salary, hire_date)
 VALUES (44552,	'Edmond' ,'Economics'	,'Candidate','BSc' ,60000	,'2021-12-04')
 
-SET IDENTITY_INSERT departments OFF;
+SET IDENTITY_INSERT departmentsss OFF;
 
 /*
 Insert with SELECT
@@ -188,13 +188,13 @@ salary BIGINT NULL
 );
 
 INSERT #salary
-SELECT id, name, salary FROM departments;
+SELECT id, name, salary FROM departmentsss;
 
 -- Or you can use the SELECT ... INTO ... FROM statement as follow:
 
 SELECT id, name, salary 
 INTO #salary
-FROM departments;
+FROM departmentsss;
 
 SELECT *
 FROM #salary
@@ -204,13 +204,16 @@ UPDATE
 
 The UPDATE statement changes data in existing rows either by adding new data or modifying existing data.
 
-
 This example uses the UPDATE statement to change the employee name in the name field to be Edward 
 for the employee has 44552 id number in the departments table.
 */
-UPDATE departments
+UPDATE departmentsss
 SET name = 'Edward'
 WHERE id = 44552;
+
+UPDATE dbo.departmentsss
+SET name = 'Bakayoko'
+Where id = 23493
 
 /*
 DELETE
@@ -244,6 +247,8 @@ Dikkat edilecek nokta WHERE ifadesi ile belli bir kayıt seçilip silinir.
 Eğer WHERE ifadesini kullanmadan yaparsak tablodaki bütün kayıtları silmiş oluruz.
 */
 
+DELETE FROM dbo.departmentsss WHERE id = 23493;
+
 -- PK coklayamaz ama FK coklayabilir. amacı da o zaten PK degil de FK olmasinin. Category tablosunda PK unique iken order
 -- tablosunda coklamasi gibi.
 
@@ -251,10 +256,10 @@ Eğer WHERE ifadesini kullanmadan yaparsak tablodaki bütün kayıtları silmiş
 --- A DATABASE EXAMPLE
 
 CREATE DATABASE LibraryDB
-USE LibraryDB
+USE LibraryDB;
 --create schemas
-CREATE SCHEMA Book
-CREATE SCHEMA Person
+CREATE SCHEMA Book;
+CREATE SCHEMA Person;
 
 
 --Create Tables
@@ -471,10 +476,7 @@ WHERE SSN = 2869512345;
 DELETE FROM Person.Person_2
 WHERE Person_LastName IS NULL;  -- last namei null olanalrı siler
 
---- FOREIGN KEY_REFERENCE CONSTRAINT
--- PK silersek bu baska yerde FK ise hata verir, 
-
-
+--- FOREIGN KEY_REFERENCE CONSTRAINT: PK silersek bu baska yerde FK ise hata verir, 
 
 -- DROP ******************************
 -- databse objectsi tamamen ortadan kaldirir
@@ -556,7 +558,7 @@ ALTER TABLE tablo_adi
 ADD CONSTRAINT kisit_adi UNIQUE(alan_adi)
 -- örneğimizdeki alana UNIQUE kısıtı ekleyelim:
 ALTER TABLE order_dimen2
-ADD CONSTRAINT order_date_kısıt UNIQUE (Order_Date)
+ADD CONSTRAINT order_date_kisit UNIQUE (Order_Date)
 /* Bir SQL tablosundaki bir alana PRIMARY KEY constrainti eklemek istersek Syntax'i şu şekildedir:
 (Not: Kısıt isimleri önemlidir. Kaldırma işlemleri bu kısıt isimleri üzerinde yapılacaktır.*/
 ALTER TABLE tablo_Adi 
