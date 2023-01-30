@@ -746,6 +746,27 @@ SELECT * FROM sale.orders WHERE dbo.svf_delivery(order_id) = 'Pending';
 -- check constraintler icin function yazılır genelde
 -- using scalar-valued functions with check constraint
 
+CREATE TABLE ON_TIME_ORDER
+	(
+	Order_ID INT,
+	Delivery_Status VARCHAR(50),
+	CONSTRAINT check_status CHECK (dbo.svf_delivery(Order_ID) = 'On Time Delivery')
+);
+GO
+
+SELECT * FROM ON_TIME_ORDER
+GO
+
+INSERT INTO  ON_TIME_ORDER (Order_ID, Delivery_Status) VALUES (7, 'On Time Delivery')
+GO
+
+DROP TABLE ON_TIME_ORDER
+GO
+
+--drop function
+
+DROP FUNCTION dbo.svf_delivery
+GO
 
 /*
 Table-Valued Function Example:
@@ -795,6 +816,40 @@ GO
 SELECT * FROM dbo.raised_salary('Eric');
 
 
--- example
+-- example 2
 
-CREATE FUNCTION tvf_prod_info
+
+CREATE FUNCTION tvf_prod_info (@prod_id INT)
+RETURNS TABLE
+AS
+RETURN
+	SELECT
+		SUM(a.quantity) [sales_quantity],
+		FORMAT(CAST(SUM(a.quantity * a.list_price * (1-a.discount)) AS DECIMAL(18,2)), 'C') [sales_amount],
+		COUNT(DISTINCT customer_id) [num_of_cust],
+		MAX(b.order_date) [last_order_date]
+	FROM
+		sale.order_item a
+		INNER JOIN
+		sale.orders b ON a.order_id=b.order_id
+	WHERE
+		product_id=@prod_id
+
+
+SELECT * FROM tvf_prod_info(20)
+GO
+
+--CROSS APPLY
+
+SELECT	
+	*
+FROM
+	product.product
+CROSS APPLY
+	tvf_prod_info(product_id)
+GO
+
+--DROP FUNCTION
+
+DROP FUNCTION tvf_prod_info
+GO
