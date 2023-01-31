@@ -92,7 +92,7 @@ FROM sale.customer
 
 -- What if we use only ORDER BY in the parentheses? 
 
-SELECT hire_date, COUNT (id) OVER(ORDER BY hire_date) cnt_employee
+SELECT hire_date, COUNT (id) OVER(ORDER BY hire_date DESC) cnt_employee
 FROM dbo.department;
 
 -- If we don't specify the ordering rule as ASC or DESC, ORDER BY accept ASC by default. So, in this example, hire_date 
@@ -109,7 +109,6 @@ FROM sale.order_item)
 SELECT order_id, total_amount
 FROM cte 
 WHERE total_amount > 500;
-
 
 -- Write a query that shows the total stock amount of each product in the stock table.(Use both of Group by and WF)
 
@@ -164,7 +163,7 @@ FROM product.product
 
 -- QUESTION
 -- How many different product in the order_item table?
-SELECT DISTINCT product_id, -- DISTINCt yazmazsak 4722 satir 77 dondurur
+SELECT  DISTINCT product_id, -- DISTINCt yazmazsak 4722 satir 77 dondurur
 		COUNT(product_id) OVER(PARTITION BY product_id) as total_products  
 FROM sale.order_item
 -- ama bu sonuc yanlıs. bu sadece o product_idnin kac defa gectigini gosteriyor. bu cevap WF ile bulunamaz
@@ -401,6 +400,22 @@ Ranking window functions return a ranking value for each row in a partition. Som
 - PERCENT_RANK :	Calculate the percent rank of each row in an ordered set of rows.
 - RANK	     : Assign a rank to each row within the partition of the result set.
 - ROW_NUMBER :	Assign a sequential integer starting from one to each row within the current partition.*/
+
+----1. Select the least 3 products in stock according to stores.
+
+WITH cte AS
+(
+SELECT e.store_id, e.store_name, s.product_id, SUM(s.quantity) as total_stock,
+        ROW_NUMBER() OVER(PARTITION BY e.store_id, e.store_name ORDER BY SUM(s.quantity)) row_number_stock,
+        RANK() OVER(PARTITION BY e.store_id, e.store_name ORDER BY SUM(s.quantity)) as rank_stock,
+        DENSE_RANK() OVER(PARTITION BY e.store_id, e.store_name ORDER BY SUM(s.quantity)) as dense_stock
+FROM product.stock s, sale.store e 
+WHERE s.store_id = e.store_id
+GROUP BY e.store_id, e.store_name, s.product_id
+)
+SELECT store_id, store_name, product_id, total_stock, dense_stock FROM cte
+WHERE dense_stock IN (1,2,3) 
+
 
 -- Let's rank the employees based on their hire date.
 

@@ -12,14 +12,15 @@ languages because they can:
 - Accept input parameters and return multiple values in the form of output parameters to the calling program.
 - Contain programming statements that perform operations in the database. These include calling other procedures.
 - Return a status value to a calling program to indicate success or failure (and the reason for failure).
-- Benefits of Using Stored Procedures
+
+* Benefits of Using Stored Procedures
 - Reduced server/client network traffic
 - Stronger security
 - Reuse of code
 - Easier maintenance
 - Improved performance
 
---Türkçe'de "saklı yordam" adıyla bilinmekte olup veritabanında saklanan SQL ifadeleridir. Kısaca derlenmiş 
+-- Türkçe'de "saklı yordam" adıyla bilinmekte olup veritabanında saklanan SQL ifadeleridir. Kısaca derlenmiş 
 SQL cümleciği denebilir.
 --İstenilen zamanda istediğiniz yerde çağırabileceğiniz, parametre alarak bir değer döndürebilen dinamik kod bloklarıdır.
 --Veritabanlarında saklandığından dolayı daha hızlı çalışırlar. 
@@ -36,13 +37,31 @@ To create a procedure in Query Editor:
 
 After opening a new Query window, you can use the following as the most basic syntax:*/
 
-CREATE PROCEDURE sp_FirstProc -- CRETAE PROC da yeterli. sportprocedure(sp) ile baslarsak ne olduguna atifta bulunuruz
+USE SampleRetail
+GO
+
+-- example 1
+
+CREATE PROC sp_pro 
+AS 
+BEGIN 
+SELECT list_price FROM product.product WHERE list_price > 500
+END 
+GO 
+
+EXEC sp_pro
+GO; 
+
+-- example 2
+
+CREATE PROCEDURE sp_FirstProc -- CREATE PROC da yeterli. sportprocedure(sp) ile baslarsak ne olduguna atifta bulunuruz
 AS 
 BEGIN 
 	SELECT 'Welcome to procedural world.' AS message
 END
 -- Call the stored procedure as follows:
-EXECUTE sp_FirstProc;  -- we get the result below as a table.
+EXECUTE sp_FirstProc  -- we get the result below as a table.
+GO;
 
 -- EXECUTE yerine EXEC de diyebiliriz
 
@@ -67,11 +86,27 @@ EXECUTE spProducts;
 -- 2
 EXEC spProducts;
 
---- cok tercih edilmeyen 3ç  kullanım
+--- cok tercih edilmeyen 3.  kullanım
 
-spProducts;
+spProducts
+GO;
 
+-- alter sp_pro
+ALTER PROC sp_pro
+AS
+BEGIN 
+	SELECT 
+		list_price
+	FROM product.product
+	WHERE 
+		list_price < 500
+END 
+GO
+
+EXEC sp_pro -- execute ile calismadi!!
+GO; 
 -- Degistirmek icin: list_pricei desc yapalım
+
 
 ALTER PROC spProducts -- create yerine alter yapariz ve gerekli islemi (desc) icine
 AS
@@ -98,6 +133,9 @@ GO
 DROP PROCEDURE dbo.sp_SecondProc
 GO
 
+DROP PROC sp_pro 
+GO
+
 -- using the ALTER PROCEDURE as below, you can change the query you wrote in the procedure.
 
 ALTER PROCEDURE sp_FirstProc AS
@@ -107,7 +145,8 @@ END
 GO 
 -- When you want to remove the stored procedure, you can use:
 
-DROP PROCEDURE sp_FirstProc;
+DROP PROCEDURE sp_FirstProc
+GO;
 
 /*  Note: When a procedure is executed for the first time, it is compiled to determine an optimal access plan 
 to retrieve the data. Subsequent executions of the procedure may reuse the plan already generated if it still 
@@ -130,8 +169,7 @@ a value for the return code, the return code is 0.
 ☝ Note: 
 A procedure can have a maximum of 2100 parameters; each assigned a name, data type, and direction. Optionally, parameters 
 can be assigned default values.
-The parameter values supplied with a procedure call must be constants or a variable.
-Here is an example with the explicit comments:*/
+The parameter values supplied with a procedure call must be constants or a variable.*/
 
 -- CREATE A PROCEDURE that takes one input parameter and returns one output parameter and a return code.
 
@@ -152,12 +190,10 @@ GO
 ALTER PROCEDURE sp_SecondProc @name varchar(20) = 'Jack', @salary INT OUTPUT
 AS
 BEGIN
-
 -- Set a value in the output parameter by using input parameter.
 SELECT @salary = salary
 FROM dbo.department
 WHERE name = @name
-
 -- Returns salary of @name
 RETURN @salary
 END
@@ -167,10 +203,8 @@ GO
 
 -- Declare the variables for the output salary.
 DECLARE @salary_output INT
-
 -- Execute the stored procedure and specify which variable are to receive the output parameter.
 EXEC sp_SecondProc @name = 'Eric', @salary = @salary_output OUTPUT
-
 -- Show the values returned.
 PRINT CAST(@salary_output AS VARCHAR(10)) + '$'
 GO
@@ -211,7 +245,7 @@ GO
 
 ALTER PROC sp_products  -- degistirdigimiz icin ALTER, bastan tanimlarken create
 	(
-		@model_year INT=NULL  -- istersek 2021 yazarız, kullanıcı birsey girmezse 2021ler gelir
+		@model_year INT = NULL  -- istersek 2021 yazarız, kullanıcı birsey girmezse 2021ler gelir
 		,@prod_name VARCHAR(MAX)
 	)
 AS
@@ -266,9 +300,7 @@ DECLARE @myfirstvar INT
 DECLARE @LastName NVARCHAR(20), @FirstName NVARCHAR(20), @State NCHAR(2);
 
 DECLARE @number AS INT -- as optional
-
 -- buna nasil deger atayacagiz, set ile:
-
 SET @number= 10
 SELECT @number;  -- declareden itibaren hepsini birlikte calistirirsak calisir deger dondurur
 
@@ -303,9 +335,6 @@ When a variable is first declared, its value is set to NULL. To assign a value t
 
 This is the preferred method of assigning a value to a variable. A variable can also have a value assigned by being 
 referenced in the select list of a SELECT statement.
-
-To assign a variable a value by using the SET statement, include the variable name and the value to assign to the variable. 
-This is the preferred method of assigning a value to a variable.
 Here is an example of how to use a variable:*/
 
 --Declare a variable
@@ -338,7 +367,7 @@ SELECT @var1 AS last_id;
 
 -- Referring to a variable in a query
 
-DECLARE @cust_id INT = 5  -- bu sekilde defger atama cok kullanlımayan bir yontem
+DECLARE @cust_id INT = 5  -- bu sekilde deger atama cok kullanlımayan bir yontem
 
 SELECT * FROM sale.customer
 WHERE customer_id = @cust_id  -- decalre kismini da birlikte calistirmazsak calismaz
@@ -406,8 +435,6 @@ ELSE PRINT 'Boolean_expression is false.' ;
 
 DECLARE @prod_id INT, @total_quantity INT 
 SET @prod_id = 20  -- 20 idli ürüne atadik 
-
-
 SET @total_quantity = (SELECT SUM(quantity) FROM sale.order_item
 WHERE product_id = @prod_id)
 
@@ -416,11 +443,10 @@ IF @total_quantity >= 50  -- 50 den büyükse eyaletlerini say
 		SELECT COUNT(DISTINCT c.state ) as total_states
 		FROM sale.order_item a, sale.orders b, sale.customer c 
 		WHERE a.order_id = b.order_id AND b.customer_id = c.customer_id
-				AND a.product_id = @prod_id  -- veya 20
+				AND a.product_id = @prod_id  -- yani 20
 	END -- begin yazdiktan sonra hmen yaz end'i unutmamak icin
 
 -- decalreden itibaren tumunu calistirmazsak calismaz.
-
 ELSE IF @total_quantity < 50  -- eyalet isimlerini getir
 BEGIN 
 	SELECT STRING_AGG([state], ',')  -- isimleri yanyana getirir aynı satirda
@@ -436,22 +462,18 @@ ELSE
 --- else ifi calistiralim
 DECLARE @prod_id INT, @total_quantity INT 
 SET @prod_id = 140  
-
-
 SET @total_quantity = (SELECT SUM(quantity) FROM sale.order_item
 WHERE product_id = @prod_id)
 
-IF @total_quantity >= 50  -- 50 den büyükse eyaletlerini say
-	BEGIN -- yukard tesk satır oldugu icin yazmamistik
+IF @total_quantity >= 50 
+	BEGIN 
 		SELECT COUNT(DISTINCT c.state ) as total_states
 		FROM sale.order_item a, sale.orders b, sale.customer c 
 		WHERE a.order_id = b.order_id AND b.customer_id = c.customer_id
-				AND a.product_id = @prod_id  -- veya 20
-	END -- begin yazdiktan sonra hmen yaz end'i unutmamak icin
+				AND a.product_id = @prod_id  
+	END 
 
--- decalreden itibaren tumunu calistirmazsak calismaz.
-
-ELSE IF @total_quantity < 50  -- eyalet isimlerini getir
+ELSE IF @total_quantity < 50 
 BEGIN 
 	SELECT STRING_AGG([state], ',')  -- isimleri yanyana getirir aynı satirda
 		FROM(
@@ -467,23 +489,20 @@ ELSE
 DECLARE @prod_id INT, @total_quantity INT 
 SET @prod_id = 540 
 
-
 SET @total_quantity = (SELECT SUM(quantity) FROM sale.order_item
 WHERE product_id = @prod_id)
 
-IF @total_quantity >= 50  -- 50 den büyükse eyaletlerini say
-	BEGIN -- yukard tesk satır oldugu icin yazmamistik
+IF @total_quantity >= 50  
+	BEGIN 
 		SELECT COUNT(DISTINCT c.state ) as total_states
 		FROM sale.order_item a, sale.orders b, sale.customer c 
 		WHERE a.order_id = b.order_id AND b.customer_id = c.customer_id
 				AND a.product_id = @prod_id  -- veya 20
-	END -- begin yazdiktan sonra hmen yaz end'i unutmamak icin
+	END 
 
--- decalreden itibaren tumunu calistirmazsak calismaz.
-
-ELSE IF @total_quantity < 50  -- eyalet isimlerini getir
+ELSE IF @total_quantity < 50 
 BEGIN 
-	SELECT STRING_AGG([state], ',')  -- isimleri yanyana getirir aynı satirda
+	SELECT STRING_AGG([state], ',') 
 		FROM(
 		SELECT DISTINCT c.state FROM sale.order_item a, sale.orders b, sale.customer c 
 		WHERE a.order_id = b.order_id AND b.customer_id = c.customer_id
@@ -517,9 +536,6 @@ CONTINUE: Causes the WHILE loop to restart, ignoring any statements after the CO
 
 ☝ Note:  If two or more WHILE loops are nested, the inner BREAK exits to the next outermost loop. All the statements 
         after the end of the inner loop run first, and then the next outermost loop restarts.*/
-
--- Ex 1
-SELECT CAST(4599.999999 AS numeric(5,1)) AS col
 
 -- In the following query, we'll generate a while loop. We'll give a limit for the while loop, and we want to break the 
 -- loop when the variable divisible by 3. In this example we use WHILE, IF, BREAK and CONTINUE statements together.
@@ -556,7 +572,6 @@ GO
 --- example: kac branda ait kac product var yazdıralım
 
 DECLARE @counter INT, @max_brand_id INT, @total_products INT 
-
 SET @counter = 1 -- brand_id 1den baslar
 SET @max_brand_id = (SELECT MAX(brand_id) FROM product.brand)  -- () unutma
 
@@ -591,7 +606,7 @@ WHILE @counter <= @max_brand_id
 			
 			SET @counter +=1
 	END 
-
+GO
 
 /*
 USER DEFINED FUNCTIONS
@@ -623,14 +638,18 @@ function body; the table is the result set of a single SELECT statement.
 
 Scalar-Valued Function Example:
 
-In the following batch, we create an user-defined scalar-valued function dbo.ufnGetAvgSalary(). The function gets an 
+In the following batch, we create a user-defined scalar-valued function dbo.ufnGetAvgSalary(). The function gets an 
 input parameter: @seniority. Then, calculates the average salary according to the value/object assigned 
 to @seniority parameter. The variable @avg_salary, declared in the function, catches the result average salary. 
 Finally, the function returns @avg_salary variable as a result.*/
 
 -- procedurdaki execute yerine return ile kullanacgiz. tablo genelinde kullanacagiz.
 
-CREATE FUNCTION dbo.ufnGetAvgSalary(@seniority VARCHAR(15))  
+CREATE FUNCTION dbo.ufnGetAvgSalary
+
+		(
+			@seniority VARCHAR(15)
+		)  
 RETURNS BIGINT   
 AS   
 -- Returns the stock level for the product.  
@@ -701,7 +720,7 @@ SELECT *, dbo.fnc_prod_quantity(product_id) FROM product.product
 
 -- how to drop
 DROP FUNCTION dbo.fnc_prod_quantity
-
+GO
 
 -- 
 
@@ -771,11 +790,14 @@ GO
 /*
 Table-Valued Function Example:
 
-In the following batch, we create an user-defined table-valued function dbo.dept_of_employee(). The function gets an 
+In the following batch, we create a user-defined table-valued function dbo.dept_of_employee(). The function gets an 
 input parameter: @dept_name. In the RETURNS statement we specify the return type of the function. Finally, 
 in the RETURN statement we specify what will return the function among the parentheses.*/
 
-CREATE FUNCTION dbo.dept_of_employee (@dept_name VARCHAR(15))  
+CREATE FUNCTION dbo.dept_of_employee 
+		(
+			@dept_name VARCHAR(15)
+		)  
 RETURNS TABLE  
 AS  
 RETURN   -- begin end yeribe return burda artik tvf icin
@@ -787,7 +809,7 @@ RETURN   -- begin end yeribe return burda artik tvf icin
 
 -- call the function
 SELECT * FROM dbo.dept_of_employee('Music');
-
+GO
 /*
 Here is another example of table-valued function:
 
@@ -796,7 +818,10 @@ a table variable @raised_salary. Then, as the main process, insert the values we
 statement with a return value cannot be used in this context. Finally, writing the RETURN statement we mention that 
 what will return the function among the parentheses.*/
 
-CREATE FUNCTION dbo.raised_salary (@name varchar(20))  
+CREATE FUNCTION dbo.raised_salary 
+		(
+			@name varchar(20)
+		)  
 RETURNS @raised_salary TABLE   
 (  
     id BIGINT,  
@@ -813,13 +838,17 @@ RETURN
 END
 GO 
 -- call the function
-SELECT * FROM dbo.raised_salary('Eric');
+SELECT * FROM dbo.raised_salary('Eric')
+GO 
 
 
 -- example 2
 
 
-CREATE FUNCTION tvf_prod_info (@prod_id INT)
+CREATE FUNCTION tvf_prod_info 
+	(
+		@prod_id INT
+	)
 RETURNS TABLE
 AS
 RETURN
