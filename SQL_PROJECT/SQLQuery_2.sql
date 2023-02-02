@@ -1,5 +1,6 @@
 -- E-Commerce Data and Customer Retention Analysis with SQL
-
+USE ecommerce
+GO
 /*
 An e-commerce organization demands some analysis of sales and shipping processes. Thus, the organization 
 hopes to be able to predict more easily the opportunities and threats for the future.
@@ -223,20 +224,20 @@ CREATE or ALTER VIEW vw_customer_visits
 AS 
         SELECT Cust_ID,
             YEAR(Order_Date) AS Year,
-            MONTH(Order_Date) AS Month,
-            Order_Date as timestamp
+            MONTH(Order_Date) AS Month
         FROM dbo.e_commerce_data
-        GROUP BY Cust_ID, YEAR(Order_Date),  MONTH(Order_Date), Order_Date;
+
 
 -- to check it:
 SELECT * FROM vw_customer_visits
+ORDER BY [Year], [Month]
 
 
 -- 2. Create a “view” that keeps the number of monthly visits by users. (Show separately 
 -- all months from the beginning business)
 
 CREATE or ALTER VIEW monthly_visits AS
-        SELECT 
+        SELECT
                 YEAR(order_date) as Year, 
                 MONTH(order_date) as Month, 
                 COUNT(*) as monthly_visits
@@ -247,53 +248,70 @@ CREATE or ALTER VIEW monthly_visits AS
 SELECT * FROM monthly_visits
 ORDER BY Year, Month;
 
+-- to show monthly distribution of the visits 
+SELECT MONTH(Order_Date) Months, COUNT(Cust_ID) AS visit_count
+FROM dbo.e_commerce_data
+GROUP BY MONTH(Order_Date);
+
 
 -- 3. For each visit of customers, create the month of next visit as a separate column.
 
-SELECT Cust_ID, Customer_Name,
-		Ord_ID,
+SELECT Cust_ID, 
+        Customer_Name,
+	Ord_ID,
         Order_Date,
-			MONTH(LEAD(Order_Date) OVER (PARTITION BY Cust_ID, Customer_Name ORDER BY Cust_ID, Order_Date)) as next_order_month
-				FROM dbo.e_commerce_data;
+	MONTH(LEAD(Order_Date) OVER (PARTITION BY Cust_ID, Customer_Name 
+                                ORDER BY Cust_ID, Order_Date)) 
+                                as next_order_month
+	FROM dbo.e_commerce_data
+
 
 
 -- 4. Calculate the monthly time gap between two consecutive visits by each customer.
 
-SELECT Cust_ID, Customer_Name,
-		Ord_ID,
+CREATE VIEW order_time_gap AS 
+SELECT Cust_ID, 
+        Customer_Name,
+	Ord_ID,
         Order_Date,
-			LEAD(Order_Date) OVER (PARTITION BY Cust_ID, Customer_Name ORDER BY Cust_ID, Order_Date) as next_order,
-            DATEDIFF(MONTH,Order_Date, 
-                    LEAD(Order_Date) OVER (PARTITION BY Cust_ID, Customer_Name ORDER BY Cust_ID, Order_Date)) 
-                    as time_gap_between_orders
+	LEAD(Order_Date) OVER (PARTITION BY Cust_ID, Customer_Name ORDER BY Cust_ID, Order_Date) as next_order,
+       DATEDIFF(MONTH,Order_Date, LEAD(Order_Date) OVER (PARTITION BY Cust_ID, Customer_Name 
+                                                      ORDER BY Cust_ID, Order_Date)) 
+                                                      as time_gap_between_orders
 				FROM dbo.e_commerce_data;
 
 -- 5. Categorise customers using average time gaps. Choose the most fitted labeling model for you. For example:
 -- o Labeled as churn if the customer hasn't made another purchase in the months since they made their first purchase.
--- o Labeled as regular if the customer has made a purchase every month. Etc.
+-- o Labeled as regular if the customer has made a purchase in every month. Etc.
 
 WITH cte AS(
-    SELECT Cust_ID, Customer_Name,
-	    	Ord_ID,
-            Order_Date,
-			LEAD(Order_Date) OVER (PARTITION BY Cust_ID, Customer_Name ORDER BY Cust_ID, Order_Date) as next_order,
-            DATEDIFF(MONTH,Order_Date, LEAD(Order_Date) 
-                    OVER (PARTITION BY Cust_ID, Customer_Name ORDER BY Cust_ID, Order_Date)) 
-                    as time_gap_between_orders
-				FROM dbo.e_commerce_data)
+    SELECT Cust_ID, 
+                Customer_Name,
+	        Ord_ID,
+                Order_Date,
+		LEAD(Order_Date) OVER (PARTITION BY Cust_ID, Customer_Name 
+                                        ORDER BY Cust_ID, Order_Date) as next_order,
+            DATEDIFF(MONTH,Order_Date, 
+                        LEAD(Order_Date) 
+                        OVER (PARTITION BY Cust_ID, Customer_Name 
+                                ORDER BY Cust_ID, Order_Date)) 
+                                 as time_gap_between_orders
+	FROM dbo.e_commerce_data
+        )
 SELECT Cust_ID, 
         Customer_Name, 
         AVG(time_gap_between_orders) as avg_time_gap,
         CASE
         WHEN AVG(time_gap_between_orders) IS NULL THEN 'Churn'
-        WHEN AVG(time_gap_between_orders) <= 24 THEN 'Regular'  -- if a customer orders at least once in 24 months: "regular"
+        WHEN AVG(time_gap_between_orders) <= 24 THEN 'Regular'
+        -- WHEN AVG(time_gap_between_orders) IS NOT NULL THEN 'Regular'  -- if a customer orders at least once in 24 months: "regular"
         WHEN AVG(time_gap_between_orders) > 24 THEN 'Potential Churn' -- if there is a huge time gap between orders, the company
                                                                     -- should give more attention to this type of customers
                                                                     -- as churn candidates.
         END AS churn_status
 FROM cte 
 GROUP BY Cust_ID, Customer_Name
-ORDER BY AVG(time_gap_between_orders)
+ORDER BY AVG(time_gap_between_orders);
 
 
 /*
@@ -313,3 +331,82 @@ Customer Segmentation section as a source.
 Month-Wise Retention Rate = 1.0 * Number of Customers Retained in The Current Month / Total 
                             Number of Customers in the Current Month
 */
+
+-- 1. Find the number of customers retained month-wise. (You can use time gaps) 
+
+DECLARE @counter INT, @max_time_gap INT, @retained_customers INT 
+SET @counter = 0 
+SET @max_time_gap = (SELECT DATEDIFF(MONTH, MIN(order_date), MAX(Order_Date)) FROM order_time_gap) 
+
+WHILE @counter <= @max_time_gap
+	BEGIN 
+			SET @retained_customers = (SELECT COUNT(DISTINCT cust_ID) FROM order_time_gap 
+                        WHERE time_gap_between_orders = @counter +1 
+                                AND Cust_ID IN(SELECT DISTINCT Cust_ID 
+                                         FROM order_time_gap
+                                WHERE time_gap_between_orders IS NOT NULL
+                                AND time_gap_between_orders =@counter))  -- buraya 0 mi girmeliyiz, soru metni??	
+			
+			PRINT 'There are ' + CAST(@retained_customers AS VARCHAR(10)) 
+								+ ' retained customers in the ' 
+								+ CAST(@counter +1 AS VARCHAR (2))
+                                                                + '. month.'
+			SET @counter +=1
+	END 
+
+-- I'll control the result with a manual calculation for the 0-1 ve 2nd months
+SELECT  DISTINCT Cust_ID                                 -- takip eden ayda 101'den alisveris yapan: 39 
+FROM order_time_gap
+WHERE time_gap_between_orders = 3 AND Cust_ID IN (
+SELECT DISTINCT Cust_ID                                 -- takip eden ayda 264ten alisveris yapan: 101 
+FROM order_time_gap
+WHERE time_gap_between_orders = 2
+        AND Cust_ID IN (
+SELECT DISTINCT Cust_ID                                 -- takip eden ayda 1165ten alisveris yapan: 264 
+FROM order_time_gap
+WHERE time_gap_between_orders = 1 AND Cust_ID IN (
+SELECT DISTINCT Cust_ID FROM order_time_gap
+WHERE time_gap_between_orders IS NOT NULL
+        AND time_gap_between_orders =0)))               -- distinct Cust_Id in the first month: 1165 
+
+
+
+--2. Calculate the month-wise retention rate.
+-- Month-Wise Retention Rate = 1.0 * Number of Customers Retained in The Current Month / Total 
+--                             Number of Customers in the Current Month
+
+/*
+SELECT DISTINCT cust_ID, YEAR(order_date) as years , MONTH(Order_Date) as months, 
+        COUNT(Cust_ID) OVER(PARTITION BY YEAR(order_date), MONTH(Order_Date)) as total_customers_per_month
+FROM order_time_gap
+ORDER BY YEAR(order_date), MONTH(Order_Date)
+*/
+
+
+WITH cte AS (
+        SELECT cust_id, 
+                YEAR(order_date) as year, 
+                MONTH(Order_Date) as month,
+                ROW_NUMBER() OVER (PARTITION BY cust_id ORDER BY YEAR(order_date), 
+                                                        MONTH(Order_Date)) AS row_num
+                FROM dbo.e_commerce_data
+                ),
+cte2 AS (
+                SELECT year, month, 
+                        count(DISTINCT cust_id) AS current_month_customers
+                        FROM cte
+                        WHERE row_num = 1
+                        GROUP BY year, month
+        ),
+cte3 AS (
+                SELECT cte2.year, cte2.month, cte2.current_month_customers,
+                sum(current_month_customers)
+                OVER (ORDER BY cte2.year, cte2.month ROWS BETWEEN 1 FOLLOWING AND UNBOUNDED FOLLOWING) 
+                                                        AS next_month_customers
+                FROM cte2
+)
+SELECT year, month,
+                1.0 * current_month_customers / next_month_customers AS monthly_retention_rate
+                FROM cte3
+                ORDER BY year, month;
+
