@@ -113,6 +113,7 @@ WITH cte AS
 
 ----8. List customers who have at least 2 consecutive orders which have not been shipped.
 
+-- first solution
 
 WITH t1 AS(
 	SELECT
@@ -134,7 +135,7 @@ WHERE
 	delivery_status='not delivered' AND next_delivery_status='not delivered';
 
 
-----2nd solution
+----Second solution
 
 SELECT customer_id
 FROM(
