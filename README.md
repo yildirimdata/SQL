@@ -1,2 +1,3 @@
 # SQL
-SQL assignments, practices etc.
+
+"My" SQL notes, theoretical expalantions, assignments, practice scripts, projects and all others...
