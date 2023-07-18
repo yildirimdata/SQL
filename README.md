@@ -38,6 +38,6 @@ Separate practice scripts about the topics mentioned above can be found under pr
 
 - IBM SQL course and certificate scripts
 - SQL Yelp dataset project
-- SQL e-commerce project
+- SQL e-commerce project: Customer profiling, segmenting, retention and churn calculations
 - Various practice scripts
 - Cheatsheets
